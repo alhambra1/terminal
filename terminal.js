@@ -1169,13 +1169,13 @@ function terminal(settings) {
               execute:  function(path){
                           if (!current_directory) return 'Please set current directory'
                           if (!path) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'EDIT'
-                          path = path.join('')
+                          path = path.join(' ')
                           
                           var target_item = parsePath(path)
                           
                           if (target_item.parsePathError || target_item == undefined)
                           {
-                            doCommand('mkdir /s ' + path)
+                            doCommand('mkdir /s ' + '"' + path + '"')
                             target_item = parsePath(path)
                           }
                           
@@ -3414,8 +3414,12 @@ function terminal(settings) {
     else if ((editor_on && e.which == 113 && isCtrl == true) || (editor_on && e.keyCode == 27))
     {
       editor_on = false
+      var filename_regex = /\\[^\\]+$/,
+          filename_regex_result = filename_regex.exec(edited_item)
+      edited_item = edited_item.substr(0, filename_regex_result.index) 
+                    + '["' + filename_regex_result[0].substr(1) + '"]'
       edited_item = edited_item.replace(/Window:\\/, 'window.').replace(/\\$/, '').replace(/\\/g, '.')
-      
+     
       var terminal_value_escaped = terminal.value.replace(/\\?'/g, function($0, $1){
                             return "\\'"
                           }).replace(/\r?\n/g, "\\n")
