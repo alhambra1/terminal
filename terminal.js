@@ -207,7 +207,8 @@ function terminal(settings) {
       batch_command_queue = [],
       batch_command_pointer = undefined,
       batch_goto_markers = {},
-      batch_file_exit = false
+      batch_file_exit = false,
+      batch_first_command = false
       
   
   this.C = {
@@ -3486,11 +3487,14 @@ function terminal(settings) {
       set_input = false
       
       var text = terminal.value
-      terminalHistory.innerHTML += ((batch_processing_on) ? '' : '<br />')
+    
+      terminalHistory.innerHTML += ((batch_processing_on && !batch_first_command) ? '' : '<br />')
                                    + set_input_text 
                                    + text.replaceArray(['&', '<', '>', ' '], 
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
                                    + '<br />' + ((command_queue[0] || batch_processing_on) ? '' : '<br />')
+      
+      if (batch_first_command) batch_first_command = false
       terminal_response = ''
       
       setTimeout(function(){
@@ -3503,10 +3507,9 @@ function terminal(settings) {
         else if (batch_processing_on && batch_command_pointer < batch_command_queue.length)
         {
           batch_command_pointer++
+          if (batch_command_pointer == batch_command_queue.length - 1) batch_processing_on = false
           doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
         }
-        else if (batch_processing_on && batch_command_pointer >= batch_command_queue.length)
-          batch_processing_on = false
       }, 2)
     }
     else if (e.keyCode == '13' && paginate_on)
@@ -3891,6 +3894,8 @@ function terminal(settings) {
       setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
       terminal_response = ''
       
+      if (batch_first_command) batch_first_command = false
+      
       if (command_queue[0])
       {
         if (command_queue[0].match(/^\s*edit\s/i)) editor_called_from_queue = true
@@ -3899,11 +3904,10 @@ function terminal(settings) {
       else if (batch_processing_on && batch_command_pointer < batch_command_queue.length - 1)
       {
         batch_command_pointer++
+        if (batch_command_pointer == batch_command_queue.length - 1) batch_processing_on = false
         if (batch_command_queue[batch_command_pointer].match(/^\s*edit\s/i)) editor_called_from_queue = true
         doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
       }
-      else if (batch_processing_on && batch_command_pointer >= batch_command_queue.length)
-        batch_processing_on = false
     }
     //if SET input command (object from set function contains {responseType, inputText, variable}
     else if (terminal_response.responseType == 'input')
@@ -3940,6 +3944,7 @@ function terminal(settings) {
       editor_on = true
       command_queue = []
       batch_processing_on = false
+      batch_first_command = false
     
       terminal_history_tmp = terminalHistory.innerHTML,
       terminal_text_tmp = $('#'+terminalTextID).text(),
@@ -4403,12 +4408,12 @@ function terminal(settings) {
       {
         try
         {
-        
           var batch_file = parsePath(cmd_array[0])
           
           if (batch_file.parsePathError) doCommand_response = batch_file.parsePathError
           else
           {
+            batch_first_command = true
             var batch_error = parseBatchFile(batch_file)
             if (batch_error) doCommand_response = batch_error
           }
