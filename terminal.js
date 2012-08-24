@@ -206,7 +206,8 @@ function terminal(settings) {
       batch_processing_on = false,
       batch_command_queue = [],
       batch_command_pointer = undefined,
-      batch_goto_markers = {}
+      batch_goto_markers = {},
+      batch_file_exit = false
       
   
   this.C = {
@@ -1220,7 +1221,8 @@ function terminal(settings) {
                           else 
                           {
                             batch_processing_on = false
-                            return '--Batch file exit--'
+                            batch_file_exit = true
+                            return ''
                           }
                         }
             },
@@ -3420,7 +3422,7 @@ function terminal(settings) {
           filename_regex_result = filename_regex.exec(edited_item)
       edited_item = edited_item.substr(0, filename_regex_result.index) 
                     + '["' + filename_regex_result[0].substr(1) + '"]'
-      edited_item = edited_item.replace(/Window:\\/, 'window.').replace(/\\$/, '').replace(/\\/g, '.')
+      edited_item = edited_item.replace(/Window:/, 'window').replace(/\\$/, '').replace(/\\/g, '.')
      
       var terminal_value_escaped = terminal.value.replace(/\\?'/g, function($0, $1){
                             return "\\'"
@@ -3488,7 +3490,7 @@ function terminal(settings) {
                                    + set_input_text 
                                    + text.replaceArray(['&', '<', '>', ' '], 
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
-                                   + '<br />' + ((command_queue[0]) ? '' : '<br />')
+                                   + '<br />' + ((command_queue[0] || batch_processing_on) ? '' : '<br />')
       terminal_response = ''
       
       setTimeout(function(){
@@ -3497,7 +3499,7 @@ function terminal(settings) {
         terminal.value = ''
         updateTerminalText()
       
-        if (!batch_processing_on && command_queue[0]) doTerminalResponse('', doCommand(command_queue[0]))
+        if (command_queue[0]) doTerminalResponse('', doCommand(command_queue[0]))
         else if (batch_processing_on && batch_command_pointer < batch_command_queue.length)
         {
           batch_command_pointer++
@@ -3877,16 +3879,19 @@ function terminal(settings) {
       terminalHistory.innerHTML += terminal_text_line + safari_adj + terminal_response
       if (terminal_response) 
       {
-        if (!command_queue[0] && !terminal_response.match(/<br \/>$|<br>$/i)) 
+        if (!command_queue[0] && !batch_processing_on && !batch_file_exit 
+            && !terminal_response.match(/<br \/>$|<br>$/i)) 
           terminalHistory.innerHTML += '<br /><br />'
         else if (!terminal_response.match(/<br \/>$|<br>$/i)) terminalHistory.innerHTML += '<br />'
+        
+        if (batch_file_exit) batch_file_exit = false
       }
       
       terminal.focus
       setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
       terminal_response = ''
       
-      if (!batch_processing_on && command_queue[0])
+      if (command_queue[0])
       {
         if (command_queue[0].match(/^\s*edit\s/i)) editor_called_from_queue = true
         doTerminalResponse('', doCommand(command_queue[0]))
