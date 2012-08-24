@@ -1166,11 +1166,12 @@ function terminal(settings) {
               help: 'Opens item in the terminal text editor. If the item\'s path exists and the item\ndoes ' +
                     'not exist or is undefined, terminal creates and opens the item.\n' +
                     'Syntax: EDIT Path',
+              passWholeLineAsParameter: true,
               execute:  function(path){
                           if (!current_directory) return 'Please set current directory'
                           if (!path) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'EDIT'
-                          path = path.join(' ')
-                          
+                          path = splitStringWithDoubleQuotes(path)[0]
+                        
                           var target_item = parsePath(path)
                           
                           if (target_item.parsePathError || target_item == undefined)
@@ -2653,10 +2654,11 @@ function terminal(settings) {
               summary: 'displays the value of a boolean, number, or string; or the text of a function',
               help: 'Displays the value of a boolean, number, or string; or the text of a function\n' +
                     'Syntax: SHOW Path',
+              passWholeLineAsParameter: true,
               execute:  function(path){
                           if (!current_directory) return 'Please set current directory'
                           if (!path) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'SHOW'
-                          path = path.join('')
+                          path = splitStringWithDoubleQuotes(path)[0]
                           
                           //return true or false if /e switch is set
                           if (path.substr(0,2).match(/\/e/i))
