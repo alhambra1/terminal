@@ -4065,7 +4065,12 @@ function terminal(settings) {
         $('#editorq_replace_bottom').toggle('fast')
         terminalText.innerHTML = ''
         terminal.value = (terminal_response.itemType != 'object') ? 
-                         terminal_response.item : JSON.stringify(terminal_response.item, '', 2)
+                         terminal_response.item : JSON.stringify(terminal_response.item, function(key, val){
+                                                                  if (typeof val === 'function') {
+                                                                    return val + ''
+                                                                  }
+                                                                  return val
+                                                                }, 2)
         $('#'+terminalID).setCursorPosition(0)
         updateTerminalText()
       }, 5)
