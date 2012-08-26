@@ -3144,10 +3144,19 @@ function terminal(settings) {
     //tab
     else if (editor_on && !editor_find_on && e.keyCode == 9 && !isShift)
     {
-      var tab_index = $('#'+terminalID ).prop('selectionStart')
-      terminal.value = terminal.value.substr(0, tab_index) + '  ' + terminal.value.substr(tab_index)
+      var tab_index = $('#'+terminalID ).prop('selectionStart'),
+          tab_regexL = / *$/,
+          tab_regexR = / *[^\s]| *\n| *$/,
+          tab_regex_resultL = tab_regexL.exec(terminal.value.substr(0, tab_index)),
+          tab_regex_resultR = tab_regexR.exec(terminal.value.substr(tab_index)),
+          tab_regex_result = (tab_regex_resultL + tab_regex_resultR).match(/ /g),
+          tab = ((!tab_regex_result || tab_regex_result.length%2 == 0) ? '  ' : ' ')
+        
+      terminal.value = terminal.value.substr(0, tab_index) 
+                       + tab
+                       + terminal.value.substr(tab_index)
       updateTerminalText()
-      $('#'+terminalID).setCursorPosition(tab_index + 2)      
+      $('#'+terminalID).setCursorPosition(tab_index + tab.length + tab_regex_resultR[0].length - 1)      
       setTimeout(function(){
         terminal.focus()
       }, 10)
