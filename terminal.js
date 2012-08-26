@@ -565,7 +565,7 @@ function terminal(settings) {
                                 + item_name  + ' is a directory\n'
                 }
                 
-                return response.replace(/\n$/, '')
+                return (response == '') ? '\n' : response.replace(/\n$/, '')
               }
             },
             dir: {
@@ -872,8 +872,6 @@ function terminal(settings) {
                             if (i < to_list.length-1) response += '\n\n'
                           }
                           
-                          if (bare_format) response = response.replace(/\n$/, '')
-                          
                           if (paginate_dir)
                           {
                             //paginate
@@ -883,7 +881,7 @@ function terminal(settings) {
                             
                             return ''
                           }
-                          else return response
+                          else return response.replace(/\n$/, '')
                         }
             },
             dom: {
