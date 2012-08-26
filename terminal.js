@@ -3426,8 +3426,8 @@ function terminal(settings) {
       edited_item = edited_item.replace(/Window:/, 'window').replace(/\\$/, '').replace(/\\/g, '.')
      
       var terminal_value_escaped = terminal.value.replace(/\\?'/g, function($0, $1){
-                            return "\\'"
-                          }).replace(/\r?\n/g, "\\n")
+                                                          return "\\'"
+                                                         }).replace(/\r?\n/g, "\\n")
       
       var editor_save_error = ''
       
@@ -3449,6 +3449,21 @@ function terminal(settings) {
               break
             case 'object':
               eval(edited_item + '=' + '(' + terminal.value + ')')
+              var edited_item_object = eval(edited_item),
+                  evalObjectMethods = function(obj){
+                    for (var i in obj)
+                    {
+                      if (typeof(obj[i]) == 'string' && obj[i].match(/function/i))
+                      {
+                        eval (edited_item + '.' + i + '=' + obj[i].replace(/\\n/g, ''))
+                      }
+                      else if (typeof(obj[i]) == 'object')
+                      {
+                        evalObjectMethods(obj[i])
+                      }
+                    }
+                  }
+                evalObjectMethods(edited_item_object)
               break
           }
         }
@@ -4578,16 +4593,25 @@ function terminal(settings) {
     else
     {
       if (!redirection_target.match(/\\/) && current_directory) 
-        redirection_target = current_directory.path + '\\' + redirection_target
+        redirection_target = current_directory.path 
+                             + ((current_directory.path == 'Window:\\')? '' : '\\') 
+                             + redirection_target
         
-      redirection_target = redirection_target.replace(/Window:\\/, 'window.').replace(/\\$/, '').replace(/\\/g, '.')
+      if (redirection_target.match(/\\/g).length > 1) 
+      {
+        redirection_target = redirection_target.replace(/\\(?=[^\\]+$)/, '["') + '"]'
+        redirection_target = redirection_target.replace(
+                                                  /Window:\\/, 'window.'
+                                                ).replace(/\\$/, '').replace(/\\/g, '.')
+      }
+      else redirection_target = redirection_target.replace(/Window:/, 'window').replace(/\\(?=[^\\]+$)/, '["') + '"]'
       
       doCommand_response=doCommand_response.toString().replace(/\n/g, '\\n')
       
       if (!redirection_append) eval(redirection_target + '=' + '"' + doCommand_response + '"')
       else eval(redirection_target + '+=' + '"' + doCommand_response + '"')
       
-      return ''
+      return '\n'
     }
   }//END DOCOMMAND FUNCTION//
   
