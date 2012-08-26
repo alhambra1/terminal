@@ -334,7 +334,7 @@ function terminal(settings) {
                                     else
                                     {
                                       break
-                                      return 'The system cannot find the path specified.'
+                                      return 'The system cannot find the path specified'
                                     }
                                   }
                                   current_directory = target_directory.directoryInfo
@@ -374,7 +374,7 @@ function terminal(settings) {
                                 var target_directory
                                 if (tmp_current_directory[path_name_array[0]])
                                     target_directory = tmp_current_directory[path_name_array[0]]
-                                else return 'The system cannot find the path specified.'
+                                else return 'The system cannot find the path specified'
                                 for (var i=1;i<path_name_array.length; i++)
                                 {
                                   if (target_directory[path_name_array[i]])
@@ -382,7 +382,7 @@ function terminal(settings) {
                                   else
                                   {
                                     break
-                                    return 'The system cannot find the path specified.'
+                                    return 'The system cannot find the path specified'
                                   }
                                 }
                                 
@@ -406,7 +406,7 @@ function terminal(settings) {
                                   else
                                   {
                                     break
-                                    return 'The system cannot find the path specified.'
+                                    return 'The system cannot find the path specified'
                                   }
                                 }
                                 current_directory = target_directory.directoryInfo
@@ -4942,7 +4942,7 @@ function terminal(settings) {
         //check if path is accessible
         if (current[path_array[0]] != undefined)
             target_directory = current[path_array[0]]
-        else return {parsePathError: 'The system cannot find the path specified.'}
+        else return {parsePathError: 'The system cannot find the path specified'}
         for (var i=1;i<path_array.length; i++)
         {
           if (target_directory[path_array[i]] != undefined)
@@ -4950,7 +4950,7 @@ function terminal(settings) {
           else
           {
             break
-            return {parsePathError: 'The system cannot find the path specified.'}
+            return {parsePathError: 'The system cannot find the path specified'}
           }
         }
       }
