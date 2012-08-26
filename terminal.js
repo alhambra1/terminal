@@ -3141,6 +3141,21 @@ function terminal(settings) {
     {
       setTimeout(function(){updateTerminalText()}, 3)
     }
+    //tab
+    else if (editor_on && !editor_find_on && e.keyCode == 9 && !isShift)
+    {
+      var tab_index = $('#'+terminalID ).prop('selectionStart')
+      terminal.value = terminal.value.substr(0, tab_index) + '  ' + terminal.value.substr(tab_index)
+      updateTerminalText()
+      $('#'+terminalID).setCursorPosition(tab_index + 2)      
+      setTimeout(function(){
+        terminal.focus()
+      }, 10)
+    }
+    else if (editor_on && !editor_find_on && e.keyCode == 9 && isShift)
+    {
+      //zzz
+    }
     //help on F9
     else if (editor_on && e.keyCode == 120) 
     {
