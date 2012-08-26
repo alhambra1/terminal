@@ -3147,6 +3147,8 @@ function terminal(settings) {
         var tab_index = $('#'+terminalID ).prop('selectionStart'),
             tab_regex_l = / *$/,
             tab_regex_r = / *[^\s]| *\n| *$/,
+            line_start_regex = /[^\n]*$/,
+            line_start_regex_result = line_start_regex.exec(terminal.value.substr(0, tab_index))
             tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index)),
             tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index)),
             tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g),
@@ -3197,7 +3199,61 @@ function terminal(settings) {
     }
     else if (editor_on && !editor_find_on && e.keyCode == 9 && isShift)
     {
-      //zzz
+      if ($('#'+terminalID ).prop('selectionStart') == $('#'+terminalID ).prop('selectionEnd'))
+      {
+        var tab_index = $('#'+terminalID ).prop('selectionStart'),
+            tab_regex_l = / *$/,
+            tab_regex_r = / *[^\s]| *\n| *$/,
+            line_start_regex = /[^\n]*$/,
+            line_start_regex_result = line_start_regex.exec(terminal.value.substr(0, tab_index))
+            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index)),
+            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index)),
+            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g)
+            
+            if (tab_regex_result && tab_regex_result.length%2 == 0) tab_adj = 2
+            else if (tab_regex_result && tab_regex_result.length%2 != 0) tab_adj = 1
+        
+        terminal.value = terminal.value.substr(0, tab_index - tab_adj)
+                         + terminal.value.substr(tab_index)
+        updateTerminalText()
+        $('#'+terminalID).setCursorPosition(tab_index - tab_adj)      
+        setTimeout(function(){
+          terminal.focus()
+        }, 10)
+      }/* zzz
+      else if ($('#'+terminalID ).prop('selectionStart') != $('#'+terminalID ).prop('selectionEnd'))
+      {
+        var editor_last_cursor_position_tmp = editor_last_cursor_position
+            tab_index_start = $('#'+terminalID ).prop('selectionStart'),
+            tab_index_end = $('#'+terminalID ).prop('selectionEnd'),
+            tab_selection = terminal.value.substr(
+                              $('#'+terminalID ).prop('selectionStart'),
+                              $('#'+terminalID ).prop('selectionEnd') - $('#'+terminalID ).prop('selectionStart')
+                            )
+            tab_regex_l = / *$/,
+            tab_regex_r = / *[^\s]| *\n| *$/,
+            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index_start)),
+            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index_start)),
+            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g),
+            tab = ((!tab_regex_result || tab_regex_result.length%2 == 0) ? '  ' : ' ')
+        
+        tab_selection = tab_selection.split(/\n/)
+        var tab_selection_length = tab_selection.length
+        for (var i=0; i<tab_selection_length; i++)
+        {
+          tab_selection[i] = tab + tab_selection[i]
+        }
+        tab_selection = tab_selection.join('\n')
+        terminal.value = terminal.value.substr(0, tab_index_start) 
+                         + tab_selection
+                         + terminal.value.substr(tab_index_end)
+        updateTerminalText()
+        $('#'+terminalID ).prop('selectionStart', tab_index_start - tab_regex_result_l[0].length)
+        $('#'+terminalID ).prop('selectionEnd', tab_index_end + (tab_selection_length*tab.length))      
+        setTimeout(function(){
+          terminal.focus()
+        }, 10)
+      }*/
     }
     //help on F9
     else if (editor_on && e.keyCode == 120) 
