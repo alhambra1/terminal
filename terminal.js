@@ -3142,43 +3142,64 @@ function terminal(settings) {
     //tab
     else if (editor_on && !editor_find_on && e.keyCode == 9 && !isShift)
     {
-      if ($('#'+terminalID ).prop('selectionStart') == $('#'+terminalID ).prop('selectionEnd'))
+      if ($('#'+terminalID).prop('selectionStart') == $('#'+terminalID).prop('selectionEnd'))
       {
-        var tab_index = $('#'+terminalID ).prop('selectionStart'),
-            tab_regex_l = / *$/,
-            tab_regex_r = / *[^\s]| *\n| *$/,
-            line_start_regex = /[^\n]*$/,
-            line_start_regex_result = line_start_regex.exec(terminal.value.substr(0, tab_index))
-            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index)),
-            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index)),
-            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g),
-            tab = ((!tab_regex_result || tab_regex_result.length%2 == 0) ? '  ' : ' ')
-          
-        terminal.value = terminal.value.substr(0, tab_index) 
-                         + tab
-                         + terminal.value.substr(tab_index)
-        updateTerminalText()
-        $('#'+terminalID).setCursorPosition(tab_index + tab.length + tab_regex_result_r[0].length - 1)      
-        setTimeout(function(){
-          terminal.focus()
-        }, 10)
+        var tab_index = $('#'+terminalID).prop('selectionStart'),
+            line_start_to_cursor_regex = /[^\n]*$/,
+            line_start_to_cursor_regex_result = line_start_to_cursor_regex.exec(terminal.value.substr(0, tab_index)),
+            cursor_before_first_word = 
+              (!line_start_to_cursor_regex_result[0] || !line_start_to_cursor_regex_result[0].match(/[^\s]/)) ? 
+              true : false,
+            tab = (line_start_to_cursor_regex_result[0].length%2 == 0) ? '  ' : ' '
+           
+        if (cursor_before_first_word)
+        { 
+          var tab_regex_r = / *[^\s]| *\n| *$/,
+              tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index))
+              
+          terminal.value = terminal.value.substr(0, tab_index) 
+                           + tab
+                           + terminal.value.substr(tab_index)
+          $('#'+terminalID).setCursorPosition(tab_index + tab.length + tab_regex_result_r[0].length - 1)
+          updateTerminalText()
+          setTimeout(function(){
+            terminal.focus()
+          }, 10)
+        }
+        else
+        {
+         terminal.value = terminal.value.substr(0, tab_index) 
+                           + tab
+                           + terminal.value.substr(tab_index)
+          $('#'+terminalID).setCursorPosition(tab_index + tab.length)
+          updateTerminalText()
+          setTimeout(function(){
+            terminal.focus()
+          }, 10)
+        }
       }
-      else if ($('#'+terminalID ).prop('selectionStart') != $('#'+terminalID ).prop('selectionEnd'))
+      else if ($('#'+terminalID).prop('selectionStart') != $('#'+terminalID).prop('selectionEnd'))
       {
-        var editor_last_cursor_position_tmp = editor_last_cursor_position
-            tab_index_start = $('#'+terminalID ).prop('selectionStart'),
-            tab_index_end = $('#'+terminalID ).prop('selectionEnd'),
+        var tab_index_start = $('#'+terminalID).prop('selectionStart'),
+            tab_index_end = $('#'+terminalID).prop('selectionEnd'),
+            line_start_to_cursor_regex = /[^\n]*$/,
+            line_start_to_cursor_regex_result = 
+              line_start_to_cursor_regex.exec(terminal.value.substr(0, tab_index_start)),
+            line_start_to_first_word_regex = / *(?=[^\s])/,
+            line_start_to_first_word_regex_result = 
+              line_start_to_first_word_regex.exec(terminal.value.substr(line_start_to_cursor_regex_result.index)),
+            selection_to_line_end_regex = /[^\n]*(?=\n)|[^\n]*(?=$)/,
+            selection_to_line_end_regex_result = 
+              selection_to_line_end_regex.exec(terminal.value.substr(tab_index_end)),
             tab_selection = terminal.value.substr(
-                              $('#'+terminalID ).prop('selectionStart'),
-                              $('#'+terminalID ).prop('selectionEnd') - $('#'+terminalID ).prop('selectionStart')
-                            )
-            tab_regex_l = / *$/,
-            tab_regex_r = / *[^\s]| *\n| *$/,
-            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index_start)),
-            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index_start)),
-            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g),
-            tab = ((!tab_regex_result || tab_regex_result.length%2 == 0) ? '  ' : ' ')
-        
+                              line_start_to_cursor_regex_result.index,
+                              $('#'+terminalID).prop('selectionEnd') - line_start_to_cursor_regex_result.index
+                            ),
+            tab_regex_l = / */,
+            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, line_start_to_cursor_regex_result.index)),
+            tab = (!line_start_to_first_word_regex_result[0] 
+                    || line_start_to_first_word_regex_result[0].length%2 == 0) ? '  ' : ' '
+
         tab_selection = tab_selection.split(/\n/)
         var tab_selection_length = tab_selection.length
         for (var i=0; i<tab_selection_length; i++)
@@ -3186,12 +3207,17 @@ function terminal(settings) {
           tab_selection[i] = tab + tab_selection[i]
         }
         tab_selection = tab_selection.join('\n')
-        terminal.value = terminal.value.substr(0, tab_index_start) 
+        terminal.value = terminal.value.substr(0, line_start_to_cursor_regex_result.index) 
                          + tab_selection
                          + terminal.value.substr(tab_index_end)
+        $('#'+terminalID ).prop('selectionStart', line_start_to_cursor_regex_result.index)
+        $('#'+terminalID ).prop(
+                            'selectionEnd', 
+                            tab_index_end
+                            + selection_to_line_end_regex_result[0].length
+                            + (tab_selection_length*tab.length)
+                          )
         updateTerminalText()
-        $('#'+terminalID ).prop('selectionStart', tab_index_start - tab_regex_result_l[0].length)
-        $('#'+terminalID ).prop('selectionEnd', tab_index_end + (tab_selection_length*tab.length))      
         setTimeout(function(){
           terminal.focus()
         }, 10)
@@ -3202,58 +3228,98 @@ function terminal(settings) {
       if ($('#'+terminalID ).prop('selectionStart') == $('#'+terminalID ).prop('selectionEnd'))
       {
         var tab_index = $('#'+terminalID ).prop('selectionStart'),
-            tab_regex_l = / *$/,
-            tab_regex_r = / *[^\s]| *\n| *$/,
-            line_start_regex = /[^\n]*$/,
-            line_start_regex_result = line_start_regex.exec(terminal.value.substr(0, tab_index))
-            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index)),
-            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index)),
-            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g)
-            
-            if (tab_regex_result && tab_regex_result.length%2 == 0) tab_adj = 2
-            else if (tab_regex_result && tab_regex_result.length%2 != 0) tab_adj = 1
-        
-        terminal.value = terminal.value.substr(0, tab_index - tab_adj)
-                         + terminal.value.substr(tab_index)
+            line_start_to_cursor_regex = /[^\n]*$/,
+            line_start_to_cursor_regex_result = 
+              line_start_to_cursor_regex.exec(terminal.value.substr(0, tab_index)),
+            cursor_before_first_word = 
+              (!line_start_to_cursor_regex_result[0] || !line_start_to_cursor_regex_result[0].match(/[^\s]/)) ? 
+              true : false,
+            line_start_to_first_word_regex = / *(?=[^\s])/,
+            line_start_to_first_word_regex_result = 
+              line_start_to_first_word_regex.exec(terminal.value.substr(line_start_to_cursor_regex_result.index)),
+            tab_adj = 0
+      
+        if (!cursor_before_first_word)
+        {
+          if (line_start_to_cursor_regex_result 
+              && line_start_to_cursor_regex_result[0].length != 0
+              && line_start_to_cursor_regex_result[0].length%2 == 0) tab_adj = 2
+          else if (line_start_to_cursor_regex_result 
+                   && line_start_to_cursor_regex_result[0].length%2 != 0) tab_adj = 1
+        }
+        else
+        {
+          if (line_start_to_first_word_regex_result 
+                && line_start_to_first_word_regex_result[0].length >= 2) tab_adj = 2
+          else if (line_start_to_first_word_regex_result 
+                   && line_start_to_first_word_regex_result[0].length < 2) tab_adj = 1
+        }
+        if (cursor_before_first_word)
+          terminal.value = terminal.value.substr(0, tab_index - tab_adj)
+                           + terminal.value.substr(tab_index)
+
+        if (!cursor_before_first_word) $('#'+terminalID).setCursorPosition(tab_index - tab_adj)
+        else $('#'+terminalID).setCursorPosition(
+                                line_start_to_cursor_regex_result.index
+                                + line_start_to_first_word_regex_result[0].length 
+                                - tab_adj
+                              )
         updateTerminalText()
-        $('#'+terminalID).setCursorPosition(tab_index - tab_adj)      
         setTimeout(function(){
           terminal.focus()
         }, 10)
-      }/* zzz
+      }
       else if ($('#'+terminalID ).prop('selectionStart') != $('#'+terminalID ).prop('selectionEnd'))
-      {
-        var editor_last_cursor_position_tmp = editor_last_cursor_position
-            tab_index_start = $('#'+terminalID ).prop('selectionStart'),
-            tab_index_end = $('#'+terminalID ).prop('selectionEnd'),
+      {//zzz
+        var tab_index_start = $('#'+terminalID).prop('selectionStart'),
+            tab_index_end = $('#'+terminalID).prop('selectionEnd'),
+            line_start_to_cursor_regex = /[^\n]*$/,
+            line_start_to_cursor_regex_result = 
+              line_start_to_cursor_regex.exec(terminal.value.substr(0, tab_index_start)),
+            selection_to_line_end_regex = /[^\n]*(?=\n)|[^\n]*(?=$)/,
+            selection_to_line_end_regex_result = 
+              selection_to_line_end_regex.exec(terminal.value.substr(tab_index_end)),
             tab_selection = terminal.value.substr(
-                              $('#'+terminalID ).prop('selectionStart'),
-                              $('#'+terminalID ).prop('selectionEnd') - $('#'+terminalID ).prop('selectionStart')
+                              line_start_to_cursor_regex_result.index,
+                              $('#'+terminalID).prop('selectionEnd') - line_start_to_cursor_regex_result.index
+                              + selection_to_line_end_regex_result[0].length
                             )
-            tab_regex_l = / *$/,
-            tab_regex_r = / *[^\s]| *\n| *$/,
-            tab_regex_result_l = tab_regex_l.exec(terminal.value.substr(0, tab_index_start)),
-            tab_regex_result_r = tab_regex_r.exec(terminal.value.substr(tab_index_start)),
-            tab_regex_result = (tab_regex_result_l + tab_regex_result_r).match(/ /g),
-            tab = ((!tab_regex_result || tab_regex_result.length%2 == 0) ? '  ' : ' ')
-        
+
         tab_selection = tab_selection.split(/\n/)
-        var tab_selection_length = tab_selection.length
-        for (var i=0; i<tab_selection_length; i++)
+        var tab_total = 0
+        for (var i=0; i<tab_selection.length; i++)
         {
-          tab_selection[i] = tab + tab_selection[i]
+          var line_start_to_first_word_regex = / *(?=[^\s])/,
+              line_start_to_first_word_regex_result = 
+                line_start_to_first_word_regex.exec(tab_selection[i]),
+              tab_adj = 0
+           
+          if (line_start_to_first_word_regex_result 
+              && line_start_to_first_word_regex_result[0].length >= 2) tab_adj = 2
+          else if (line_start_to_first_word_regex_result 
+                   && line_start_to_first_word_regex_result[0].length < 2
+                   && line_start_to_first_word_regex_result[0].length != 0) tab_adj = 1
+          
+          tab_selection[i] = tab_selection[i].substr(tab_adj)
+          tab_total += tab_adj
         }
         tab_selection = tab_selection.join('\n')
-        terminal.value = terminal.value.substr(0, tab_index_start) 
+     
+        terminal.value = terminal.value.substr(0, line_start_to_cursor_regex_result.index) 
                          + tab_selection
-                         + terminal.value.substr(tab_index_end)
+                         + terminal.value.substr(tab_index_end + selection_to_line_end_regex_result[0].length)
+        $('#'+terminalID ).prop('selectionStart', line_start_to_cursor_regex_result.index)
+        $('#'+terminalID ).prop(
+                            'selectionEnd', 
+                            tab_index_end
+                            + selection_to_line_end_regex_result[0].length
+                            - tab_total
+                          )
         updateTerminalText()
-        $('#'+terminalID ).prop('selectionStart', tab_index_start - tab_regex_result_l[0].length)
-        $('#'+terminalID ).prop('selectionEnd', tab_index_end + (tab_selection_length*tab.length))      
         setTimeout(function(){
           terminal.focus()
         }, 10)
-      }*/
+      }
     }
     //help on F9
     else if (editor_on && e.keyCode == 120) 
