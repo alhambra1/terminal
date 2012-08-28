@@ -482,12 +482,45 @@ function terminal(settings) {
                 }
                 else if (typeof(copy_from) == 'object')
                 {
-                  var tmp = JSON.stringify(copy_from)
+                  var tmp = JSON.stringify(copy_from, function(key, val){
+                                            if (typeof val === 'function') {
+                                              return val + ''
+                                            }
+                                            return val
+                                          })
                   copy_to_obj[copy_to_name] = JSON.parse(tmp)
+                  
+                  var item_to_eval = copy_to_path + '\\' + copy_to_name
+                      filename_regex = /\\[^\\]+$/,
+                      filename_regex_result = filename_regex.exec(item_to_eval)
+                      
+                  item_to_eval = item_to_eval.substr(0, filename_regex_result.index) 
+                                + '"]["' + filename_regex_result[0].substr(1) + '"]'
+                  if (item_to_eval.match(/^window/i))
+                    item_to_eval = item_to_eval.replace(
+                                                  /Window:\\/, 'window["'
+                                                ).replace(/\\$/, '').replace(/\\/g, '"]["')
+                  else 
+                    item_to_eval = item_to_eval.replace(/\\$/, '').replace(/\\/, '["').replace(/\\/g, '"]["')
+                  
+                  var evalObjectMethods = function(obj){
+                        for (var i in obj)
+                        {
+                          if (typeof(obj[i]) == 'string' && obj[i].match(/function/i))
+                          {
+                            eval(item_to_eval + '["' + i + '"] =' + obj[i].replace(/\\n/g, ''))
+                          }
+                          else if (typeof(obj[i]) == 'object')
+                          {
+                            evalObjectMethods(obj[i])
+                          }
+                        }
+                      }
+                  evalObjectMethods(copy_to_obj[copy_to_name])
                   
                   var map_path = copy_to_path
                   if (!map_path.match(/Window:\\/)) map_path = current_directory.path + '\\' + map_path
-                  doCommand('map ' + map_path)
+                  doCommand('map "' + map_path + '"')
                   
                   return '        1 object(s) copied.'
                 }
@@ -3613,8 +3646,11 @@ function terminal(settings) {
       var filename_regex = /\\[^\\]+$/,
           filename_regex_result = filename_regex.exec(edited_item)
       edited_item = edited_item.substr(0, filename_regex_result.index) 
-                    + '["' + filename_regex_result[0].substr(1) + '"]'
-      edited_item = edited_item.replace(/Window:/, 'window').replace(/\\$/, '').replace(/\\/g, '.')
+                    + '"]["' + filename_regex_result[0].substr(1) + '"]'
+      if (edited_item.match(/^window/i))
+        edited_item = edited_item.replace(/Window:\\/, 'window["').replace(/\\$/, '').replace(/\\/g, '"]["')
+      else 
+        edited_item = edited_item.replace(/\\$/, '').replace(/\\/, '["').replace(/\\/g, '"]["')
      
       var terminal_value_escaped = terminal.value.replace(/\\?'/g, function($0, $1){
                                                           return "\\'"
@@ -3646,7 +3682,7 @@ function terminal(settings) {
                     {
                       if (typeof(obj[i]) == 'string' && obj[i].match(/function/i))
                       {
-                        eval (edited_item + '.' + i + '=' + obj[i].replace(/\\n/g, ''))
+                        eval (edited_item + '["' + i + '"] =' + obj[i])
                       }
                       else if (typeof(obj[i]) == 'object')
                       {
@@ -3655,6 +3691,7 @@ function terminal(settings) {
                     }
                   }
                 evalObjectMethods(edited_item_object)
+                doCommand('map "' + edited_item.replace(/"\]\[[^\[\]]+\]$/, '').replace(/\["|"\]\["/g, '.') + '"')
               break
           }
         }
