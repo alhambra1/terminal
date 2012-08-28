@@ -2134,7 +2134,8 @@ function terminal(settings) {
                       child_name = child_and_parent[0]
                       parent_name = child_and_parent[1]
                               
-                      var parent_name_array = parent_name.split('.'),
+                      var parent_name_array = (parent_name.match(/Window:\\/i)) ? 
+                                              ['window'] : parent_name.replace(/Window:\\/i, '').split(/\.|\\/),
                           parent_obj = window,
                           child_obj
                           
@@ -2327,7 +2328,7 @@ function terminal(settings) {
                     if (!target_type) 
                     {
                       obj[new_dir_name] = {}
-                      doCommand('map ' + new_dir_path + '\\' + new_dir_name)
+                      doCommand('map child ' + '"' + new_dir_name + '" "' + new_dir_path + '"')
                     }
                     else
                     {
@@ -2350,7 +2351,7 @@ function terminal(settings) {
                   }
                 }
                 
-                return response
+                return (response == '') ? '\n' : response
               }
             },
             remove: {
@@ -2408,6 +2409,25 @@ function terminal(settings) {
                             return response
                           }
               }
+            },
+            rename: {
+              name: 'rename',
+              summary: 'renames an item',
+              help: 'Renames an item.\nSyntax: ' +
+                    'RENAME [PATH]ITEM [PATH]NEW-ITEM',
+              execute:  function(items){
+                          if (!items || items[3]) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'RENAME'
+                          var response = '', 
+                              is_object = false
+                          
+                          doCommand('copy ' + items[0] + ' ' + items[1])
+                          if (typeof parsePath(items[0]) == 'object') is_object = true
+                          
+                          if (!is_object) doCommand('del ' + items[0])
+                          else doCommand('rmdir ' + items[0])
+                          
+                          return (response == '') ? '\n' : response
+                        }
             },
             rmdir: {
               name: 'rmdir',
