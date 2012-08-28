@@ -238,15 +238,6 @@ function terminal(settings) {
           
           //cmd commands
           command: {
-            bt: {
-              name: 'bt',
-              summary: 'runs batch test',
-              help: '',
-              execute:  function(){
-                          parseBatchFile()
-                          return ''
-                        }
-            },
             call: {
               name: 'call',
               summary: 'calls User Functions',
@@ -3270,7 +3261,7 @@ function terminal(settings) {
         }, 10)
       }
       else if ($('#'+terminalID ).prop('selectionStart') != $('#'+terminalID ).prop('selectionEnd'))
-      {//zzz
+      {
         var tab_index_start = $('#'+terminalID).prop('selectionStart'),
             tab_index_end = $('#'+terminalID).prop('selectionEnd'),
             line_start_to_cursor_regex = /[^\n]*$/,
