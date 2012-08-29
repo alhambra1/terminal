@@ -885,12 +885,14 @@ function terminal(settings) {
                             if (!bare_format)
                             {
                               response += '\n'
-                                       + '    ' + bool_count + ' Boolean(s)\n'
-                                       + '    ' + num_count + ' Numbers(s)\n'
-                                       + '    ' + str_count + ' Strings(s)\n'
-                                       + '    ' + fnc_count + ' Functions(s)\n'
-                                       + '    ' + obj_count + ' Object(s)\n'
-                                       + '    ' + undef_count + ' Undefined'
+                                       + ((bool_count) ? '    ' + bool_count + ' Boolean(s)\n' : '')
+                                       + ((num_count) ? '    ' + num_count + ' Numbers(s)\n' : '')
+                                       + ((str_count) ? '    ' + str_count + ' Strings(s)\n' : '')
+                                       + ((fnc_count) ? '    ' + fnc_count + ' Functions(s)\n' : '')
+                                       + ((obj_count) ? '    ' + obj_count + ' Object(s)\n' : '')
+                                       + ((undef_count) ? '    ' + undef_count + ' Undefined' : '')
+                              
+                              response = response.replace(/\n$/, '')
                             }
                             
                             if (i < to_list.length-1) response += '\n\n'
