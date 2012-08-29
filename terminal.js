@@ -508,7 +508,7 @@ function terminal(settings) {
                         {
                           if (typeof(obj[i]) == 'string' && obj[i].match(/function/i))
                           {
-                            eval(item_to_eval + '["' + i + '"] =' + obj[i].replace(/\\n/g, ''))
+                            eval(item_to_eval + '["' + i + '"] =' + obj[i])
                           }
                           else if (typeof(obj[i]) == 'object')
                           {
