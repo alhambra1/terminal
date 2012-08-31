@@ -885,14 +885,12 @@ function terminal(settings) {
                             if (!bare_format)
                             {
                               response += '\n'
-                                       + ((bool_count) ? '    ' + bool_count + ' Boolean(s)\n' : '')
-                                       + ((num_count) ? '    ' + num_count + ' Numbers(s)\n' : '')
-                                       + ((str_count) ? '    ' + str_count + ' Strings(s)\n' : '')
-                                       + ((fnc_count) ? '    ' + fnc_count + ' Functions(s)\n' : '')
-                                       + ((obj_count) ? '    ' + obj_count + ' Object(s)\n' : '')
-                                       + ((undef_count) ? '    ' + undef_count + ' Undefined' : '')
-                              
-                              response = response.replace(/\n$/, '')
+                                       + '    ' + bool_count + ' Boolean(s)\n'
+                                       + '    ' + num_count + ' Numbers(s)\n'
+                                       + '    ' + str_count + ' Strings(s)\n'
+                                       + '    ' + fnc_count + ' Functions(s)\n'
+                                       + '    ' + obj_count + ' Object(s)\n'
+                                       + '    ' + undef_count + ' Undefined'
                             }
                             
                             if (i < to_list.length-1) response += '\n\n'
@@ -4111,6 +4109,17 @@ function terminal(settings) {
       //adjust for pasted lines with no <br>
       if (terminal_text_line && !terminal_text_line.match(/<br \/>$|<br>$/i)) terminal_text_line += '<br />'
       
+      //add zero-space char to avoid automatic line breaks after semicolons, slashes, etc.
+      var terminal_text_line_sub = terminal_text_line.substr(
+                                                        0, terminal_text_line.length-6
+                                                      ).replaceArray(['&lt;', '&gt;', '&nbsp;', '&amp;'], 
+                                                                     ['<', '>', ' ', '&'])
+      for (var i=0; i<terminal_text_line_sub.length; i+=8)
+      {
+        terminal_text_line_sub = terminal_text_line_sub.substr(0, i) + '&#8203;' + terminal_text_line_sub.substr(i)
+      }
+      terminal_text_line = terminal_text_line_sub + terminal_text_line.substr(terminal_text_line.length-6)
+      
       //convert html tags unless they are escaped
       terminal_response = terminal_response.toString().replace(/(HTML)?&/g, function($0, $1){
                             return $1 ? '&' : '&amp;'
@@ -4615,10 +4624,11 @@ function terminal(settings) {
                                + '>' + redirection_split.splice(i + 1, 1)
       }
       
+      cmd_string = redirection_split[0]
+      
       if (redirection_split.length > 1)
       {
         redirection_on = true
-        cmd_string = redirection_split[0]
         redirection_split.splice(0, 1)
         redirection_target = redirection_split.join('').match(/"[^"]+"|[^\s]+/)[0]
         if (redirection_target.match(/^"/)) 
@@ -5418,7 +5428,7 @@ var matrix_font_rule = '<style type="text/css">@font-face {font-family: Matrix_C
                        ');}</style>'
 $('head').append(matrix_font_rule)
 var consolas_font_rule = '<style type="text/css">@font-face {font-family: consolas; src: url(' +
-                       '"http://rootspiano.x10.bz/public/consolas.ttf"' +
+                       'consolas.ttf' + //'"http://rootspiano.x10.bz/public/consolas.ttf"' +
                        ');}</style>'
 $('head').append(consolas_font_rule)
 
