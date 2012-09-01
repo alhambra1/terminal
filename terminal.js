@@ -5428,7 +5428,7 @@ var matrix_font_rule = '<style type="text/css">@font-face {font-family: Matrix_C
                        ');}</style>'
 $('head').append(matrix_font_rule)
 var consolas_font_rule = '<style type="text/css">@font-face {font-family: consolas; src: url(' +
-                       'consolas.ttf' + //'"http://rootspiano.x10.bz/public/consolas.ttf"' +
+                       '"http://rootspiano.x10.bz/public/consolas.ttf"' +
                        ');}</style>'
 $('head').append(consolas_font_rule)
 
