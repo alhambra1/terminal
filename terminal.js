@@ -2390,6 +2390,35 @@ function terminal(settings) {
                 return (response == '') ? '\n' : response
               }
             },
+            'new': {
+              name: 'new',
+              summary: 'creates new object',
+              help: 'Created a new object.\nSyntax: ' +
+                    'NEW WINDOW [Id]',
+              param: {
+                'window': function(id){
+                         
+                            var new_window_id = (id[0]) ? id[0] : 'newqWindow'
+                            
+                            $('#' + containerID).after(
+                                                  '<div id="' + new_window_id + '"'
+                                                  + 'style="background:yellow; width:200px; height:200px;'
+                                                  + 'left:' + $('#' + containerID).css('width') + ';'
+                                                  + '">Hello!'
+                                                  + '</div>'
+                                                )
+                      
+                            tmp_variables.new_window_id = new_window_id
+                            
+                            setTimeout(function(){
+                              $('#' + tmp_variables.new_window_id).draggable()
+                              $('#' + tmp_variables.new_window_id).resizable()
+                            }, 10)
+                            
+                            return (command_queue[0]) ? '' : '\n'
+                          }
+                      }
+            },
             remove: {
               name: 'remove',
               summary: 'removes a command from the cmd.command or User Functions space',
@@ -2558,12 +2587,15 @@ function terminal(settings) {
                             {  
                               variable_assignment = splitStringWithDoubleQuotes(variable_assignment)[0]
                               
-                              for (var i in CMD_PATH.variable)
+                              if (variable_assignment.match(/[^\s]+/))
                               {
-                                if (i.match(variable_assignment))
+                                for (var i in CMD_PATH.variable)
                                 {
-                                  var_list.push(i)
-                                  var_count++
+                                  if (i.match(variable_assignment.match(/[^\s]+/)[0]))
+                                  {
+                                    var_list.push(i)
+                                    var_count++
+                                  }
                                 }
                               }
                             }  
@@ -2577,7 +2609,7 @@ function terminal(settings) {
                               }
                               return response + '\n'
                             }
-                            else if (!list_all) 
+                            else if (!list_all && variable_assignment.match(/[^\s]+/)) 
                               return 'Environment variable ' + variable_assignment + ' not defined'
                             else return (command_queue[0]) ? '' : '\n'
                           }
@@ -5140,7 +5172,7 @@ function terminal(settings) {
   
   //replace variable names with variables
   parseVariable = function(str){
-    var regex = /\%[a-zA-Z_]([a-zA-Z0-9_])*\%/, found_variable, to_replace = [], tmp = str
+    var regex = /\%[^\%]+\%/, found_variable, to_replace = [], tmp = str
     while ( (found_variable = regex.exec(tmp)) )
     {
       var trimmed_variable = found_variable[0].substr(1,found_variable[0].length-2)
