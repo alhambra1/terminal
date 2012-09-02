@@ -208,7 +208,10 @@ function terminal(settings) {
       batch_command_pointer = undefined,
       batch_goto_markers = {},
       batch_file_exit = false,
-      batch_first_command = false
+      batch_first_command = false,
+      
+      //temporary variables
+      tmp_variables = {}
       
   
   this.C = {
@@ -2528,32 +2531,55 @@ function terminal(settings) {
                     'Syntax: SET [/P | /A] Variable-Name [=Value]',
               passWholeLineAsParameter: true,
               execute:  function(variable_assignment){
-                          var var_list = [], response = ''
+                          var var_list = [],
+                              list_all = false,
+                              var_count = 0,
+                              response = ''
                           
-                          if (!variable_assignment) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'SET'              
+                          if (!variable_assignment) list_all = true          
 
                           //if not assignment display information about matching variables
                           if (!variable_assignment.match('='))
                           {
-                            var count=0
-                            for (var i in CMD_PATH.variable)
+                            //list all variables
+                            if (list_all)
                             {
-                              if (i.match(variable_assignment))
+                              for (var i in CMD_PATH.variable)
                               {
-                                var_list.push(i)
-                                count++
+                                if (!CMD_PATH.variable[i].hidden)
+                                {
+                                  var_list.push(i)
+                                  var_count++
+                                }
                               }
                             }
-                            if (count > 0)
+                            //list one variable
+                            else
+                            {  
+                              variable_assignment = splitStringWithDoubleQuotes(variable_assignment)[0]
+                              
+                              for (var i in CMD_PATH.variable)
+                              {
+                                if (i.match(variable_assignment))
+                                {
+                                  var_list.push(i)
+                                  var_count++
+                                }
+                              }
+                            }  
+                              
+                            if (var_count > 0)
                             {
                               var_list.sort()
                               for (var i=0; i<var_list.length; i++)
                               {
-                                response += var_list[i] + '=' + CMD_PATH.variable[var_list[i]] + '<br />'
+                                response += var_list[i] + '=' + CMD_PATH.variable[var_list[i]] + '\n'
                               }
-                              return response.substr(0, response.length-6)
+                              return response + '\n'
                             }
-                            else return 'Environment variable ' + variable_assignment + ' not defined'
+                            else if (!list_all) 
+                              return 'Environment variable ' + variable_assignment + ' not defined'
+                            else return (command_queue[0]) ? '' : '\n'
                           }
                           //if assignment, assign
                           else
