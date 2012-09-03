@@ -211,7 +211,10 @@ function terminal(settings) {
       batch_first_command = false,
       
       //temporary variables
-      tmp_variables = {}
+      tmp_objects_q = {
+          objects : {},
+          new_windows: 0
+        }
       
   
   this.C = {
@@ -2393,26 +2396,51 @@ function terminal(settings) {
             'new': {
               name: 'new',
               summary: 'creates new object',
-              help: 'Created a new object.\nSyntax: ' +
-                    'NEW WINDOW [Id]',
+              help: 'Creates a new object. Current objects include a new window (div).\nSyntax: NEW WINDOW [Options]\n' +
+                    'Options:\n\n' +
+                    '  [/I Div-Id] [/S Div-Style] [/H Div-Html] [RESIZABLE*]\n\n' +
+                    '*For RESIZABLE option, terminal must link a jquery-ui or comparable css theme.\n' +
+                    'The new id is stored and can be used for short-hand jquery commands.\n' +
+                    'For example: Div-Id HTML "\'<span^>This is my new \\"escaped\\" html</span^>\'"\n' +
+                    'Enclose arguments with spaces between double quotes (which will be removed),\n' +
+                    'and strings for the jquery command between single quotes. Single and double\n' +
+                    'quotes may be escaped within the string argument.',
               param: {
-                'window': function(id){
-                         
-                            var new_window_id = (id[0]) ? id[0] : 'newqWindow'
+                'window': function(properties){
+                            
+                            var new_windows_pointer = tmp_objects_q.new_windows,
+                                new_window_id = 'newqWindow' + String(new_windows_pointer),
+                                new_window_style = 'background:yellow; width:200px; height:200px;'
+                                                   + 'left:' + $('#' + containerID).css('width') + ';',
+                                new_window_html = 'Hello!',
+                                new_window_draggable = true,
+                                new_window_resizable = false
+                           
+                            if (properties)
+                            {
+                              for (var i=0; i<properties.length; i++)
+                              {
+                                if (properties[i].match(/^\/i$/i)) new_window_id = properties[i+1]
+                                else if (properties[i].match(/^\/s$/i)) new_window_style = properties[i+1]
+                                else if (properties[i].match(/^\/h$/i)) new_window_html = properties[i+1]
+                                else if (properties[i].match(/^resizable$/i)) new_window_resizable = true
+                              }
+                            }
                             
                             $('#' + containerID).after(
                                                   '<div id="' + new_window_id + '"'
-                                                  + 'style="background:yellow; width:200px; height:200px;'
-                                                  + 'left:' + $('#' + containerID).css('width') + ';'
-                                                  + '">Hello!'
+                                                  + 'style="' + new_window_style + '">' 
+                                                  + new_window_html
                                                   + '</div>'
                                                 )
-                      
-                            tmp_variables.new_window_id = new_window_id
+                            
+                            tmp_objects_q.new_windows++
+                            tmp_objects_q.objects[new_window_id] = {}
                             
                             setTimeout(function(){
-                              $('#' + tmp_variables.new_window_id).draggable()
-                              $('#' + tmp_variables.new_window_id).resizable()
+                              $('#' + new_window_id).draggable()
+                              if (new_window_resizable) 
+                                $('#' + new_window_id).resizable()
                             }, 10)
                             
                             return (command_queue[0]) ? '' : '\n'
@@ -4879,6 +4907,19 @@ function terminal(settings) {
             doCommand_response = 'System cannot find the paramater or an execute function for the command '
                                 + cmd_array[0]
           }
+        }
+      }
+      //if command is the id of a tmp-object, create jquery syntax
+      else if (tmp_objects_q.objects[cmd_array[0]] && cmd_array[1])
+      {
+        try
+        {
+          doCommand_response = eval('$("#' + cmd_array[0] + '").' + cmd_array[1] + '(' 
+                                    + ((cmd_array[2]) ? cmd_array[2] : '') + ')')
+        }
+        catch(error)
+        {
+          doCommand_response = error.message
         }
       }
       else
