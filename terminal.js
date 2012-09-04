@@ -1178,7 +1178,8 @@ function terminal(settings) {
                     'into assigned variable values.\nSyntax: ECHO Statement',
               passWholeLineAsParameter: true,
               execute:  function(statement){
-                          if (!statement) return 'ECHO is on.'
+              
+                          if (!statement || !statement.match(/[^\s]/)) return 'ECHO is on.'
                           return statement.replace(/\s+$/, '')
                         }
             },
