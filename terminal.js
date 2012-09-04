@@ -4952,8 +4952,8 @@ function terminal(settings) {
             append = '',
             str = ''
         
-        if (cmd_array[2].match(/^\/a$/i)) append = '$("#' + cmd_as_element_id + '").' + cmd_array[1] + '() + '
-        else if (cmd_array[2].match(/^\/p$/i)) prepend = ' + $("#' + cmd_as_element_id + '").' + cmd_array[1] + '()'
+        if (cmd_array[2] && cmd_array[2].match(/^\/a$/i)) append = '$("#' + cmd_as_element_id + '").' + cmd_array[1] + '() + '
+        else if (cmd_array[2] && cmd_array[2].match(/^\/p$/i)) prepend = ' + $("#' + cmd_as_element_id + '").' + cmd_array[1] + '()'
  
         if (prepend == '' && append == '' && cmd_array[2]) str = cmd_array[2]
         else if (cmd_array[3]) str = cmd_array[3]
