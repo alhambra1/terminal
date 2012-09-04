@@ -1222,9 +1222,12 @@ function terminal(settings) {
               name: 'eval',
               passWholeLineAsParameter: true,
               execute: function(string){
+                         /* 
                          var outer_response = window.eval ( string )
                          if (outer_response) return outer_response
-                         else (command_queue[0]) ? '' : '\n'
+                         else return (command_queue[0]) ? '' : '\n'
+                         */
+                         return window.eval(string)
                        }
             },
             exit: {
@@ -2400,11 +2403,13 @@ function terminal(settings) {
                     'Options:\n\n' +
                     '  [/I Div-Id] [/S Div-Style] [/H Div-Html] [RESIZABLE*]\n\n' +
                     '*For RESIZABLE option, terminal must link a jquery-ui or comparable css theme.\n' +
-                    'The new id is stored and can be used for short-hand jquery commands.\n' +
-                    'For example: Div-Id HTML "\'<span^>This is my new \\"escaped\\" html</span^>\'"\n' +
+                    'The new id (and other element ids) can be used for short-hand jquery commands.\n' +
+                    'For example:\n\n' +
+                    '  Div-Id HTML [/A | /P] "\'<span^>My new \\"escaped\\" html</span^>\'"\n\n' +
                     'Enclose arguments with spaces between double quotes (which will be removed),\n' +
                     'and strings for the jquery command between single quotes. Single and double\n' +
-                    'quotes may be escaped within the string argument.',
+                    'quotes may be escaped within the string argument. /A or /P after the\njquery ' +
+                    'function will append or prepend, respectively.',
               param: {
                 'window': function(properties){
                             
@@ -2585,7 +2590,8 @@ function terminal(settings) {
               name: 'set',
               summary: 'sets or displays information about environment variables',
               help: 'Sets or displays information about environment variables\n' +
-                    'Syntax: SET [/P | /A] Variable-Name [=Value]',
+                    'Syntax: SET [/P | /A | /I | /E] Variable-Name [=Value]\n' +
+                    'Options: /P input, /A arithmetic, /I item-path, /E eval',
               passWholeLineAsParameter: true,
               execute:  function(variable_assignment){
                           var var_list = [],
@@ -2652,11 +2658,30 @@ function terminal(settings) {
                             //trim variable
                             variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
                             
-                            //if not input or arithmetic set
-                            if (!variable_assignment_array[0].substr(0,2).match(/\/p/i)
-                                && !variable_assignment_array[0].substr(0,2).match(/\/a/i))
+                            //if item
+                            if (variable_assignment_array[0].substr(0,2).match(/\/i/i))
                             {
-                              CMD_PATH.variable[variable_assignment_array[0]] = variable_assignment_array[1]
+                              //remove parameter
+                              variable_assignment_array[0] = variable_assignment_array[0].substr(2)
+                              //trim variable
+                              variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
+                              
+                              var tmp_item = parsePath(variable_assignment_array[1])
+                              
+                              if (typeof tmp_item != 'object')
+                                CMD_PATH.variable[variable_assignment_array[0]] = tmp_item
+                              if (tmp_item.parsePathError) return tmp_item.parsePathError
+                              else return (command_queue[0]) ? '' : '\n'
+                            }
+                            //if eval
+                            if (variable_assignment_array[0].substr(0,2).match(/\/e/i))
+                            {
+                              //remove parameter
+                              variable_assignment_array[0] = variable_assignment_array[0].substr(2)
+                              //trim variable
+                              variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
+                            
+                              CMD_PATH.variable[variable_assignment_array[0]] = eval(variable_assignment_array[1])
                               return (command_queue[0]) ? '' : '\n'
                             }
                             //if input
@@ -2755,6 +2780,12 @@ function terminal(settings) {
                               }
                               
                               return response
+                            }
+                            //if no flags
+                            else
+                            {
+                              CMD_PATH.variable[variable_assignment_array[0]] = variable_assignment_array[1]
+                              return (command_queue[0]) ? '' : '\n'
                             }
                           }
                         }
@@ -3733,8 +3764,11 @@ function terminal(settings) {
           filename_regex_result = filename_regex.exec(edited_item)
       edited_item = edited_item.substr(0, filename_regex_result.index) 
                     + '"]["' + filename_regex_result[0].substr(1) + '"]'
+                    
       if (edited_item.match(/^window/i))
-        edited_item = edited_item.replace(/Window:\\/, 'window["').replace(/\\$/, '').replace(/\\/g, '"]["')
+        edited_item = edited_item.replace(
+                                    /Window:"]/, 'window'
+                                  ).replace(/Window:\\/, 'window["').replace(/\\$/, '').replace(/\\/g, '"]["')
       else 
         edited_item = edited_item.replace(/\\$/, '').replace(/\\/, '["').replace(/\\/g, '"]["')
      
@@ -4689,9 +4723,6 @@ function terminal(settings) {
     
     command_queue.splice(0, 1)
     
-    //replace variable names with variables
-    cmd_string = parseVariable(cmd_string)
-    
     //if redirection ">"
     if (cmd_string.match(/>/) && !cmd_string.match(/^\s*for\s|^\s*if\s/i))
     {
@@ -4723,6 +4754,9 @@ function terminal(settings) {
         doCommand('mkdir /s ' + redirection_target)
       }
     }
+    
+    //replace variable names with variables
+    cmd_string = parseVariable(cmd_string)
     
     //special case: echo.
     if (cmd_string.match(/^echo\./i)) cmd_string = 'echo. ' + cmd_string.substr(5)
@@ -4815,6 +4849,7 @@ function terminal(settings) {
     else
     {
       //change to lowercase
+      var cmd_as_element_id = cmd_array[0]
       cmd_array[0] = cmd_array[0].toLowerCase()
       
       //match command name
@@ -4910,12 +4945,27 @@ function terminal(settings) {
         }
       }
       //if command is the id of a tmp-object, create jquery syntax
-      else if (tmp_objects_q.objects[cmd_array[0]] && cmd_array[1])
+      else if (document.getElementById(cmd_as_element_id) != null && cmd_array[1])
       {
+        var prepend = '',
+            append = '',
+            str = ''
+        
+        if (cmd_array[2].match(/^\/a$/i)) append = '$("#' + cmd_as_element_id + '").' + cmd_array[1] + '() + '
+        else if (cmd_array[2].match(/^\/p$/i)) prepend = ' + $("#' + cmd_as_element_id + '").' + cmd_array[1] + '()'
+ 
+        if (prepend == '' && append == '') str = ((cmd_array[2]) ? cmd_array[2] : '')
+        else str = ((cmd_array[3]) ? cmd_array[3] : '')
+      
         try
         {
-          doCommand_response = eval('$("#' + cmd_array[0] + '").' + cmd_array[1] + '(' 
-                                    + ((cmd_array[2]) ? cmd_array[2] : '') + ')')
+          eval('$("#' + cmd_as_element_id + '").' + cmd_array[1] + '(' 
+               + append
+               + str
+               + prepend
+               + ')')
+          
+          doCommand_response = ''
         }
         catch(error)
         {
