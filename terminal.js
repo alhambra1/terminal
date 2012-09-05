@@ -207,8 +207,6 @@ function terminal(settings) {
       batch_command_queue = [],
       batch_command_pointer = undefined,
       batch_goto_markers = {},
-      batch_file_exit = false,
-      batch_first_command = false,
       
       //temporary variables
       tmp_objects_q = {
@@ -254,7 +252,7 @@ function terminal(settings) {
                       //eval method
                       var function_name = name_and_params[0], 
                           parameters = name_and_params.slice(1),
-                          response
+                          response = ''
                           
                       if (!USER_FUNCTIONS_PATH[function_name])
                         return 'System cannot locate User Function ' + function_name
@@ -284,8 +282,7 @@ function terminal(settings) {
                       
                       response = window.eval ( '(function(){' + input_params + func_exec + ')()' )
                       
-                      if (response) return response
-                      else return (command_queue[0]) ? '' : '\n'
+                      return response
                     }
               }
             },
@@ -315,7 +312,7 @@ function terminal(settings) {
                                 if (current_directory.parentDirectory.object.length == 1)
                                 {
                                   current_directory = ROOT_PATH.directoryInfo
-                                  return (command_queue[0]) ? '' : '\n'
+                                  return ''
                                 }
                                 else
                                 {
@@ -335,7 +332,7 @@ function terminal(settings) {
                                     }
                                   }
                                   current_directory = target_directory.directoryInfo
-                                  return (command_queue[0]) ? '' : '\n'
+                                  return ''
                                 }
                               }
                               else return 'Working directory is root directory.'
@@ -344,7 +341,7 @@ function terminal(settings) {
                             if (path_name == ROOT) 
                             {
                               current_directory = ROOT_PATH.directoryInfo
-                              return (command_queue[0]) ? '' : '\n'
+                              return ''
                             }
                             else
                             {
@@ -388,8 +385,9 @@ function terminal(settings) {
                                          ' (for help, type HELP MAP)'
                                 
                                 current_directory = target_directory.directoryInfo
-                                return (command_queue[0]) ? '' : '\n'
+                                return ''
                               }
+                              //if path-name starts with root
                               else
                               {
                                 //check if path is accessible
@@ -407,7 +405,7 @@ function terminal(settings) {
                                   }
                                 }
                                 current_directory = target_directory.directoryInfo
-                                return (command_queue[0]) ? '' : '\n'
+                                return ''
                               }
                             }
                           }
@@ -1236,27 +1234,18 @@ function terminal(settings) {
               summary: 'exits terminal',
               help: 'Exits Terminal.<br />Syntax: EXIT',
               execute:  function(){
-                          if (!batch_processing_on)
+                          CMD_PATH.command.cls.execute()
+                          if (welcome_message)
                           {
-                            CMD_PATH.command.cls.execute()
-                            if (welcome_message)
-                            {
-                              setTimeout(function(){
-                                terminalHistory.innerHTML = welcome_message + '<br /><br />'
-                              },3)
-                            }
-                            $('#'+terminalID).toggle('slow')
-                            $('#'+terminalDivID).toggle('slow')
-                            $('#'+headingDivID).toggle('slow')
-                            $('#'+buttonID).toggle('slow')
-                            return ''
+                            setTimeout(function(){
+                              terminalHistory.innerHTML = welcome_message + '<br /><br />'
+                            },3)
                           }
-                          else 
-                          {
-                            batch_processing_on = false
-                            batch_file_exit = true
-                            return ''
-                          }
+                          $('#'+terminalID).toggle('slow')
+                          $('#'+terminalDivID).toggle('slow')
+                          $('#'+headingDivID).toggle('slow')
+                          $('#'+buttonID).toggle('slow')
+                          return ''
                         }
             },
             explore: {
@@ -1826,8 +1815,7 @@ function terminal(settings) {
                           }
                           
                           var response = doFor(str)
-                          if (response) return response
-                          else return (command_queue[0]) ? '' : '\n'
+                          if (response) return (response) ? response : ''
                         }
             }, //END FOR COMMAND//
             'goto': {
@@ -2079,8 +2067,7 @@ function terminal(settings) {
                           }
                           
                           var response = doIf(str)
-                          if (response) return response
-                          else return (command_queue[0]) ? '' : '\n'
+                          if (response) return (response) ? response : ''
                         }
             },//END IF COMMAND//
             insert: {
@@ -2449,7 +2436,7 @@ function terminal(settings) {
                                 $('#' + new_window_id).resizable()
                             }, 10)
                             
-                            return (command_queue[0]) ? '' : '\n'
+                            return ''
                           }
                       }
             },
@@ -2640,13 +2627,14 @@ function terminal(settings) {
                               var_list.sort()
                               for (var i=0; i<var_list.length; i++)
                               {
-                                response += var_list[i] + '=' + CMD_PATH.variable[var_list[i]] + '\n'
+                                response += var_list[i] + '=' + CMD_PATH.variable[var_list[i]]
+                                if (i < var_list.length - 1) response += '\n'
                               }
-                              return response + '\n'
+                              return response
                             }
                             else if (!list_all && variable_assignment.match(/[^\s]+/)) 
                               return 'Environment variable ' + variable_assignment + ' not defined'
-                            else return (command_queue[0]) ? '' : '\n'
+                            else return ''
                           }
                           //if assignment, assign
                           else
@@ -2672,7 +2660,7 @@ function terminal(settings) {
                               if (typeof tmp_item != 'object')
                                 CMD_PATH.variable[variable_assignment_array[0]] = tmp_item
                               if (tmp_item.parsePathError) return tmp_item.parsePathError
-                              else return (command_queue[0]) ? '' : '\n'
+                              else return ''
                             }
                             //if eval
                             if (variable_assignment_array[0].substr(0,2).match(/\/e/i))
@@ -2683,7 +2671,7 @@ function terminal(settings) {
                               variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
                             
                               CMD_PATH.variable[variable_assignment_array[0]] = eval(variable_assignment_array[1])
-                              return (command_queue[0]) ? '' : '\n'
+                              return ''
                             }
                             //if input
                             else if (variable_assignment_array[0].substr(0,2).match(/\/p/i))
@@ -2786,7 +2774,7 @@ function terminal(settings) {
                             else
                             {
                               CMD_PATH.variable[variable_assignment_array[0]] = variable_assignment_array[1]
-                              return (command_queue[0]) ? '' : '\n'
+                              return ''
                             }
                           }
                         }
@@ -2809,7 +2797,7 @@ function terminal(settings) {
                             }
                           }
                           
-                          return (command_queue[0]) ? '' : '\n'
+                          return ''
                         }
             },
             show: {
@@ -3852,13 +3840,12 @@ function terminal(settings) {
       
       var text = terminal.value
     
-      terminalHistory.innerHTML += ((batch_processing_on && !batch_first_command) ? '' : '<br />')
+      terminalHistory.innerHTML += ((terminalHistory.innerHTML.match(/<br \/>$|<br>$/i)) ? '' : '<br />')
                                    + set_input_text 
                                    + text.replaceArray(['&', '<', '>', ' '], 
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
                                    + '<br />' + ((command_queue[0] || batch_processing_on) ? '' : '<br />')
-      
-      if (batch_first_command) batch_first_command = false
+  
       terminal_response = ''
       
       setTimeout(function(){
@@ -3866,6 +3853,7 @@ function terminal(settings) {
         set_input_text = ''
         terminal.value = ''
         updateTerminalText()
+        setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
       
         if (command_queue[0]) doTerminalResponse('', doCommand(command_queue[0]))
         else if (batch_processing_on && batch_command_pointer < batch_command_queue.length)
@@ -4251,25 +4239,17 @@ function terminal(settings) {
                           }).replace(/(HTML)?</g, function($0, $1){
                             return $1 ? '<' : '&lt;'
                           })
-                          
+      
+      if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
+      if (!command_queue[0] && !batch_processing_on) terminal_response += '\n'
+      
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
       terminalHistory.innerHTML += terminal_text_line + safari_adj + terminal_response
-      if (terminal_response) 
-      {
-        if (!command_queue[0] && !batch_processing_on && !batch_file_exit 
-            && !terminal_response.match(/<br \/>$|<br>$/i)) 
-          terminalHistory.innerHTML += '<br /><br />'
-        else if (!terminal_response.match(/<br \/>$|<br>$/i)) terminalHistory.innerHTML += '<br />'
-        
-        if (batch_file_exit) batch_file_exit = false
-      }
-      
+    
       terminal.focus
       setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
       terminal_response = ''
-      
-      if (batch_first_command) batch_first_command = false
       
       if (command_queue[0])
       {
@@ -4312,6 +4292,7 @@ function terminal(settings) {
           blinkBorder(caretID, fontColor_rgb)
         },532)
         terminal.innerHTML = ''
+        setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
       }, 2)
     }
     else if (terminal_response.responseType == 'edit')
@@ -4319,7 +4300,6 @@ function terminal(settings) {
       editor_on = true
       command_queue = []
       batch_processing_on = false
-      batch_first_command = false
     
       terminal_history_tmp = terminalHistory.innerHTML,
       terminal_text_tmp = $('#'+terminalTextID).text(),
@@ -4794,7 +4774,6 @@ function terminal(settings) {
           if (batch_file.parsePathError) doCommand_response = batch_file.parsePathError
           else
           {
-            batch_first_command = true
             var batch_error = parseBatchFile(batch_file)
             if (batch_error) doCommand_response = batch_error
           }
@@ -4825,7 +4804,7 @@ function terminal(settings) {
               else
               {
                 var text = cmd_string, adj = cmd_array[0].length+1
-                
+          
                 doCommand_response = 
                   CMD_PATH.command[ cmd_array[0] ].execute( text.substr(text.indexOf(cmd_array[0])+adj) )
               }
