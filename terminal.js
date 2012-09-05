@@ -5553,11 +5553,11 @@ function createMatrix(matrixSettings){
 var matrix_on = false
 var matrix_tmp_font
 var matrix_font_rule = '<style type="text/css">@font-face {font-family: Matrix_Code_Font; src: url(' +
-                       '"http://rootspiano.x10.bz/public/Matrix_Code_Font.ttf"' +
+                       '"http://alhambra.x10.bz/public/Matrix_Code_Font.ttf"' +
                        ');}</style>'
 $('head').append(matrix_font_rule)
 var consolas_font_rule = '<style type="text/css">@font-face {font-family: consolas; src: url(' +
-                       '"http://rootspiano.x10.bz/public/consolas.ttf"' +
+                       '"http://alhambra.x10.bz/public/consolas.ttf"' +
                        ');}</style>'
 $('head').append(consolas_font_rule)
 
