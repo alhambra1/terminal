@@ -1826,11 +1826,14 @@ function terminal(settings) {
               execute:  function(section){
                           if (!section) return 'GOTO section parameter missing.'
                           
-                          section = section[0].replace(/^\s+|\s+$/, '').toLowerCase()
-                          if (batch_goto_markers[section]) 
+                          section = section[0].replace(/^\s+|\s+$|:/, '').toLowerCase()
+                        
+                          if (batch_goto_markers[section] != undefined) 
                           {
-                            batch_command_pointer = batch_goto_markers[section]
-                            return ''
+                            return {
+                                type: 'goto',
+                                pointer: batch_goto_markers[section]
+                              }
                           }
                           else return 'System cannot find GOTO section ' + section + '.'
                         }
@@ -3844,7 +3847,9 @@ function terminal(settings) {
                                    + set_input_text 
                                    + text.replaceArray(['&', '<', '>', ' '], 
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
-                                   + '<br />' + ((command_queue[0] || batch_processing_on) ? '' : '<br />')
+                                   + '<br />' 
+                                   + ((command_queue[0] 
+                                       || batch_command_pointer < batch_command_queue.length) ? '' : '<br />')
   
       terminal_response = ''
       
@@ -3854,13 +3859,22 @@ function terminal(settings) {
         terminal.value = ''
         updateTerminalText()
         setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
-      
+    
         if (command_queue[0]) doTerminalResponse('', doCommand(command_queue[0]))
-        else if (batch_processing_on && batch_command_pointer < batch_command_queue.length)
+        else if (batch_command_pointer < batch_command_queue.length)
         {
           batch_command_pointer++
           if (batch_command_pointer == batch_command_queue.length - 1) batch_processing_on = false
-          doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
+          if (batch_command_queue[batch_command_pointer].match(/^\s*edit\s/i)) editor_called_from_queue = true
+          
+          var is_goto = doCommand(batch_command_queue[batch_command_pointer])
+          if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
+            doTerminalResponse('', is_goto)
+          else 
+          {
+            batch_command_pointer = is_goto.pointer
+            doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
+          }
         }
       }, 2)
     }
@@ -4256,12 +4270,20 @@ function terminal(settings) {
         if (command_queue[0].match(/^\s*edit\s/i)) editor_called_from_queue = true
         doTerminalResponse('', doCommand(command_queue[0]))
       }
-      else if (batch_processing_on && batch_command_pointer < batch_command_queue.length - 1)
+      else if (batch_command_pointer < batch_command_queue.length - 1)
       {
         batch_command_pointer++
         if (batch_command_pointer == batch_command_queue.length - 1) batch_processing_on = false
         if (batch_command_queue[batch_command_pointer].match(/^\s*edit\s/i)) editor_called_from_queue = true
-        doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
+        
+        var is_goto = doCommand(batch_command_queue[batch_command_pointer])
+        if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
+          doTerminalResponse('', is_goto)
+        else 
+        {
+          batch_command_pointer = is_goto.pointer
+          doTerminalResponse('', doCommand(batch_command_queue[batch_command_pointer]))
+        }
       }
     }
     //if SET input command (object from set function contains {responseType, inputText, variable}
@@ -4683,7 +4705,7 @@ function terminal(settings) {
         redirection_append = false,
         redirection_target
     
-    if (input_string.match(/&/) && !input_string.match(/^\s*for\s|^\s*if\s/i))
+    if (input_string && input_string.match(/&/) && !input_string.match(/^\s*for\s|^\s*if\s/i))
     {
       ampersand_split = input_string.split('&')
       
