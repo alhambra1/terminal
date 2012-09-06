@@ -2070,7 +2070,7 @@ function terminal(settings) {
                           }
                           
                           var response = doIf(str)
-                          if (response) return (response) ? response : ''
+                          return (response) ? response : ''
                         }
             },//END IF COMMAND//
             insert: {
@@ -3825,7 +3825,7 @@ function terminal(settings) {
         $('#editorq_footer').remove()
         terminalHistory.innerHTML = terminal_history_tmp
         terminalHistory.innerHTML += ((editor_called_from_queue) ? '' : terminal_text_tmp) 
-                                     + editor_save_error + '<br />'
+                                     + editor_save_error + ((editor_called_from_queue) ? '' : '<br />') 
                                      + ((editor_called_from_queue && !editor_save_error) ? '' : '<br />')
         editor_called_from_queue = false
         terminalText.innerHTML = ''
@@ -4255,7 +4255,7 @@ function terminal(settings) {
                           })
       
       if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
-      if (!command_queue[0] && !batch_processing_on) terminal_response += '\n'
+      if (!command_queue[0] && batch_command_pointer < batch_command_queue.length) terminal_response += '\n'
       
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
@@ -4322,6 +4322,7 @@ function terminal(settings) {
       editor_on = true
       command_queue = []
       batch_processing_on = false
+      batch_command_pointer = batch_command_queue.length
     
       terminal_history_tmp = terminalHistory.innerHTML,
       terminal_text_tmp = $('#'+terminalTextID).text(),
@@ -5062,7 +5063,7 @@ function terminal(settings) {
         if (str.substr(batch_parse_pointer).match(/^\s*else\s*\(/i))
         {
           substr2 = str.substr(batch_parse_pointer, statements.parenthetical[1][0][1] + 1)
-          batch_command_queue.push(String((substr1 + substr2).match(/[^\s]+.+/)))
+          batch_command_queue.push((substr1 + substr2).replace(/^\s+/, ''))
           batch_parse_pointer = pointer_at_function_start + statements.parenthetical[1][0][1] + 1
           if (str.substr(batch_parse_pointer).match(/^[^\n]+[a-zA-Z0-9_]/))
             return 'Batch parse error, line ' + batch_line_number
@@ -5080,7 +5081,7 @@ function terminal(settings) {
           var regex = /\n|$/,
               regex_result = regex.exec(str.substr(batch_parse_pointer))
           substr2 = str.substr(batch_parse_pointer, regex_result.index)
-          batch_command_queue.push(String((substr1 + substr2).match(/[^\s]+.+/)))
+          batch_command_queue.push((substr1 + substr2).replace(/^\s+/, ''))
           batch_parse_pointer += regex_result.index + 1
         }
       }
@@ -5093,10 +5094,12 @@ function terminal(settings) {
       if (str.substr(batch_parse_pointer + statements.parenthetical[0][0][1] + 1).match(/^\s*do\s*\(/i))
       {
         batch_command_queue.push(
-          String(str.substr(batch_parse_pointer, 
-                     statements.parenthetical[1][0][1] + 1
-                    ).match(/[^\s]+.+/))
-        )
+                              str.substr(
+                                    batch_parse_pointer, 
+                                    statements.parenthetical[1][0][1] + 1
+                                  ).replace(/^\s+/, '')
+                            )
+        
         batch_parse_pointer += statements.parenthetical[1][0][1] + 1
         
         if (str.substr(batch_parse_pointer).match(/^[^\n]+[a-zA-Z0-9_]/))
@@ -5113,11 +5116,9 @@ function terminal(settings) {
       //if DO is not followed by parentheses
       else
       {
-        var to_push = String(
-                        str.substr(
-                              batch_parse_pointer, statements.parenthetical[0][0][1] + 1
-                            ).match(/[^\s]+.+/)
-                      )
+        var to_push = str.substr(
+                            batch_parse_pointer, statements.parenthetical[0][0][1] + 1
+                          ).replace(/^\s+/, '')
         
         batch_parse_pointer += statements.parenthetical[0][0][1] + 1
         
