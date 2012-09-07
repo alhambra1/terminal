@@ -3854,6 +3854,8 @@ function terminal(settings) {
         terminalHistory.innerHTML += ((editor_called_from_queue) ? '' : terminal_text_tmp) 
                                      + editor_save_error + ((editor_called_from_queue) ? '' : '<br />') 
                                      + ((editor_called_from_queue && !editor_save_error) ? '' : '<br />')
+        if (editor_called_from_queue && !terminalHistory.innerHTML.match(/<br \/><br \/>$/i)) 
+          terminalHistory.innerHTML += '<br />'
         editor_called_from_queue = false
         terminalText.innerHTML = ''
         terminalText.style.height = 10
