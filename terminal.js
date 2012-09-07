@@ -2066,35 +2066,12 @@ function terminal(settings) {
                             
                             //split multiple commands
                             var if_command_statements,
-                                if_ampersand_split,
                                 if_command_queue,
                                 if_command_response = ''
                             
                             if (evaluation)
                             {   
-                              if_command_statements = parseQuotesAndParentheses(command)
-                              
-                              if (if_command_statements.parenthetical.length == 0)
-                              {
-                                if (command.match(/&/))
-                                {
-                                  if_ampersand_split = command.split('&')
-                                  
-                                  for (var i=if_ampersand_split.length-1; i>=0; i--)
-                                  {
-                                    if (if_ampersand_split[i].match(/\^$/) && if_ampersand_split[i + 1] != undefined)
-                                      if_ampersand_split[i] = if_ampersand_split[i].substr(0, if_ampersand_split[i].length-1)
-                                                           + '&' + if_ampersand_split.splice(i + 1, 1)
-                                  }
-                                }
-                                else if_ampersand_split = [command]
-                                
-                                if_command_queue = if_ampersand_split
-                              }
-                              else
-                              {
-                                //zzz
-                              }
+                              if_command_queue = parseAmpersandAndParentheses(command)
                             
                               for (var i=0; i<if_command_queue.length; i++)
                               {
@@ -2105,29 +2082,7 @@ function terminal(settings) {
                             }
                             else if (else_string)
                             {
-                              if_command_statements = parseQuotesAndParentheses(else_string)
-                            
-                              if (if_command_statements.parenthetical.length == 0)
-                              {
-                                if (else_string.match(/&/))
-                                {
-                                  if_ampersand_split = else_string.split('&')
-                                  
-                                  for (var i=if_ampersand_split.length-1; i>=0; i--)
-                                  {
-                                    if (if_ampersand_split[i].match(/\^$/) && if_ampersand_split[i + 1] != undefined)
-                                      if_ampersand_split[i] = if_ampersand_split[i].substr(0, if_ampersand_split[i].length-1)
-                                                           + '&' + if_ampersand_split.splice(i + 1, 1)
-                                  }
-                                }
-                                else if_ampersand_split = [else_string]
-                                
-                                if_command_queue = if_ampersand_split
-                              }
-                              else
-                              {
-                                //zzz
-                              }
+                              if_command_queue = parseAmpersandAndParentheses(else_string)
                             
                               for (var i=0; i<if_command_queue.length; i++)
                               {
@@ -5482,6 +5437,86 @@ function blinkBorder(id, color){
   el = document.getElementById(id)
   el.style.borderBottom = 
     el.style.borderBottom == ('3px solid ' + color) ? 'none' : '3px solid ' + color
+}
+
+function ampersandSplit (str){
+  var answer
+  
+  if (str.match(/&/))
+  {
+    answer = str.split('&')
+    
+    for (var i=answer.length-1; i>=0; i--)
+    {
+      if (answer[i].match(/\^$/) && answer[i + 1] != undefined)
+        answer[i] = answer[i].substr(0, answer[i].length-1)
+                             + '&' + answer.splice(i + 1, 1)
+    }
+  }
+  else answer = [str]
+  
+  return answer
+}
+
+function parseAmpersandAndParentheses(str){
+  var str_statements = parseQuotesAndParentheses(str),
+      queue
+                              
+  if (str_statements.parenthetical.length == 0)
+    queue = ampersandSplit(str)
+  else
+  {
+    var str_pointer = 0,
+        tmp,
+        tmp_split
+        
+    queue = []
+      
+    for (var i=0; i<str_statements.parenthetical.length; i++)
+    {
+      tmp = str.substr(
+                      str_pointer,
+                      str_statements.parenthetical[i][0][0] - str_pointer
+                    )
+      tmp_split = ampersandSplit(tmp)
+      
+      if (queue.length > 0 && tmp_split.length == 1)
+      {
+          queue[queue.length-1] += str.substr(
+                                     str_pointer,
+                                     str_statements.parenthetical[i][0][1] - str_pointer + 1
+                                   )
+      }
+      else
+      {
+        for (var j=0; j<tmp_split.length-1; j++)
+        {
+          queue.push(tmp_split[j].replace(/^\s+/, ''))
+        }
+       
+        queue.push(
+                tmp_split[tmp_split.length-1].replace(/^\s+/, '')
+                + str.substr(
+                    str_statements.parenthetical[i][0][0],
+                    str_statements.parenthetical[i][0][1] 
+                    - str_statements.parenthetical[i][0][0] + 1
+                  )
+              )
+      }
+      str_pointer = str_statements.parenthetical[i][0][1] + 1
+    }
+    
+    //add rest of string
+    tmp = str.substr(str_pointer)
+    tmp_split = ampersandSplit(tmp)
+    if (tmp_split.length) 
+    {
+      queue[queue.length-1] += tmp_split.splice(0, 1)
+      queue = queue.concat(tmp_split)
+    }
+  }
+ 
+  return queue
 }
 
 function parseQuotesAndParentheses(str)
