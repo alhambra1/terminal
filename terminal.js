@@ -4284,8 +4284,8 @@ function terminal(settings) {
                           })
       
       if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
-      if (!command_queue[0] && (!batch_processing_on || !(batch_command_pointer < batch_command_queue.length))) 
-        terminal_response += '\n'
+      if (!command_queue[0] && (!batch_processing_on || !(batch_command_pointer < batch_command_queue.length))
+          || (batch_command_pointer == 0 && batch_command_queue.length == 1)) terminal_response += '\n'
      
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
