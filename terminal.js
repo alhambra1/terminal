@@ -2064,8 +2064,78 @@ function terminal(settings) {
                               }
                             }
                             
-                            if (evaluation) return doCommand(command)
-                            else if (else_string) return doCommand(else_string)
+                            //split multiple commands
+                            var if_command_statements,
+                                if_ampersand_split,
+                                if_command_queue,
+                                if_command_response = ''
+                            
+                            if (evaluation)
+                            {   
+                              if_command_statements = parseQuotesAndParentheses(command)
+                              
+                              if (if_command_statements.parenthetical.length == 0)
+                              {
+                                if (command.match(/&/))
+                                {
+                                  if_ampersand_split = command.split('&')
+                                  
+                                  for (var i=if_ampersand_split.length-1; i>=0; i--)
+                                  {
+                                    if (if_ampersand_split[i].match(/\^$/) && if_ampersand_split[i + 1] != undefined)
+                                      if_ampersand_split[i] = if_ampersand_split[i].substr(0, if_ampersand_split[i].length-1)
+                                                           + '&' + if_ampersand_split.splice(i + 1, 1)
+                                  }
+                                }
+                                else if_ampersand_split = [command]
+                                
+                                if_command_queue = if_ampersand_split
+                              }
+                              else
+                              {
+                                //zzz
+                              }
+                            
+                              for (var i=0; i<if_command_queue.length; i++)
+                              {
+                                if_command_response += doCommand(if_command_queue[i])
+                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                              }
+                              return if_command_response
+                            }
+                            else if (else_string)
+                            {
+                              if_command_statements = parseQuotesAndParentheses(else_string)
+                            
+                              if (if_command_statements.parenthetical.length == 0)
+                              {
+                                if (else_string.match(/&/))
+                                {
+                                  if_ampersand_split = else_string.split('&')
+                                  
+                                  for (var i=if_ampersand_split.length-1; i>=0; i--)
+                                  {
+                                    if (if_ampersand_split[i].match(/\^$/) && if_ampersand_split[i + 1] != undefined)
+                                      if_ampersand_split[i] = if_ampersand_split[i].substr(0, if_ampersand_split[i].length-1)
+                                                           + '&' + if_ampersand_split.splice(i + 1, 1)
+                                  }
+                                }
+                                else if_ampersand_split = [else_string]
+                                
+                                if_command_queue = if_ampersand_split
+                              }
+                              else
+                              {
+                                //zzz
+                              }
+                            
+                              for (var i=0; i<if_command_queue.length; i++)
+                              {
+                                if_command_response += doCommand(if_command_queue[i])
+                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                              }
+                              return if_command_response
+                            }
                             else return false
                           }
                           
@@ -4255,7 +4325,8 @@ function terminal(settings) {
                           })
       
       if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
-      if (!command_queue[0] && batch_command_pointer < batch_command_queue.length) terminal_response += '\n'
+      if (!command_queue[0] && (!batch_processing_on || batch_command_pointer < batch_command_queue.length)) 
+        terminal_response += '\n'
       
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
