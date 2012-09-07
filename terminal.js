@@ -2071,8 +2071,9 @@ function terminal(settings) {
                             
                             if (evaluation)
                             {   
-                              if_command_queue = parseAmpersandAndParentheses(command)
-                            
+                              //if_command_queue = parseAmpersandAndParentheses(command)
+                              if_command_queue = parseBatch(command)
+                              
                               for (var i=0; i<if_command_queue.length; i++)
                               {
                                 if_command_response += doCommand(if_command_queue[i])
@@ -2082,8 +2083,9 @@ function terminal(settings) {
                             }
                             else if (else_string)
                             {
-                              if_command_queue = parseAmpersandAndParentheses(else_string)
-                            
+                              //if_command_queue = parseAmpersandAndParentheses(else_string)
+                              if_command_queue = parseBatch(else_string)
+                              
                               for (var i=0; i<if_command_queue.length; i++)
                               {
                                 if_command_response += doCommand(if_command_queue[i])
@@ -2093,7 +2095,7 @@ function terminal(settings) {
                             }
                             else return false
                           }
-                          
+                         
                           var response = doIf(str)
                           return (response) ? response : ''
                         }
@@ -4280,9 +4282,9 @@ function terminal(settings) {
                           })
       
       if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
-      if (!command_queue[0] && (!batch_processing_on || batch_command_pointer < batch_command_queue.length)) 
+      if (!command_queue[0] && (!batch_processing_on || !(batch_command_pointer < batch_command_queue.length))) 
         terminal_response += '\n'
-      
+     
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
       terminalHistory.innerHTML += terminal_text_line + safari_adj + terminal_response
@@ -5053,7 +5055,8 @@ function terminal(settings) {
           regex_result
       
       regex_result = regex.exec(str.substr(batch_parse_pointer))
-      batch_command_queue.push(String(str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]+.+/)))
+      if (str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]/))
+        batch_command_queue.push(str.substr(batch_parse_pointer, regex_result.index).replace(/^\s+/, ''))
       batch_parse_pointer += regex_result.index + 1
     }
     
@@ -5079,7 +5082,8 @@ function terminal(settings) {
           var regex = /\n|$/,
               regex_result = regex.exec(str.substr(batch_parse_pointer))
           substr1 = str.substr(batch_parse_pointer, regex_result.index)
-          batch_command_queue.push(String(str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]+.+/)))
+          if (str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]/))
+            batch_command_queue.push(str.substr(batch_parse_pointer, regex_result.index).replace(/^\s+/, ''))
           batch_parse_pointer += regex_result.index + 1
           break
       }
@@ -5088,7 +5092,7 @@ function terminal(settings) {
       {
         if (str.substr(batch_parse_pointer).match(/^\s*else\s*\(/i))
         {
-          substr2 = str.substr(batch_parse_pointer, statements.parenthetical[1][0][1] + 1)
+          substr2 = str.substr(batch_parse_pointer, statements.parenthetical[1][0][1] + 1 - substr1.length)
           batch_command_queue.push((substr1 + substr2).replace(/^\s+/, ''))
           batch_parse_pointer = pointer_at_function_start + statements.parenthetical[1][0][1] + 1
           if (str.substr(batch_parse_pointer).match(/^[^\n]+[a-zA-Z0-9_]/))
@@ -5198,13 +5202,13 @@ function terminal(settings) {
           break
       }
       
-      if (batch_parse_pointer >= str.length) batch_end_of_file = true
       batch_regex_result = batch_command_regex.exec(str.substr(batch_parse_pointer))
+      if (batch_parse_pointer >= str.length || batch_regex_result == null) batch_end_of_file = true
       batch_line_number++
     }
     
     if (batch_parse_error) return batch_parse_error
-    
+   
     //execute batch file
     if (batch_command_queue.length > 0)
     {
@@ -5458,65 +5462,181 @@ function ampersandSplit (str){
   return answer
 }
 
-function parseAmpersandAndParentheses(str){
-  var str_statements = parseQuotesAndParentheses(str),
-      queue
-                              
-  if (str_statements.parenthetical.length == 0)
-    queue = ampersandSplit(str)
-  else
-  {
-    var str_pointer = 0,
-        tmp,
-        tmp_split
-        
-    queue = []
-      
-    for (var i=0; i<str_statements.parenthetical.length; i++)
+//PARSE BATCH FILE
+parseBatch = function(str){
+
+  var batch_parse_pointer = 0,
+      batch_command_regex = /^\s*[^\s]+/,
+      batch_regex_result = undefined,
+      batch_end_of_file = false,
+      batch_line_number = 1,
+      batch_parse_error = false,
+  
+  //reset batch parser
+  parseBatch_command_pointer = 0,
+  parseBatch_command_queue = [],
+  parseBatch_goto_markers = {}
+  
+  var parseCommandDefault = function(){
+    var regex = /\n|$/,
+        regex_result
+    
+    regex_result = regex.exec(str.substr(batch_parse_pointer))
+    if (str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]/))
+      parseBatch_command_queue.push(str.substr(batch_parse_pointer, regex_result.index).replace(/^\s+/, ''))
+    batch_parse_pointer += regex_result.index + 1
+  }
+  
+  var parseIfCommand = function(){
+    var result = str.substr(batch_parse_pointer).match(/\(|\n|$/)[0],
+        substr1,
+        substr2,
+        substr3,
+        statements,
+        has_first_parenthesis = false,
+        pointer_at_function_start = batch_parse_pointer
+    
+    //parse first parentheses, else, or newline 
+    switch (result)
     {
-      tmp = str.substr(
-                      str_pointer,
-                      str_statements.parenthetical[i][0][0] - str_pointer
-                    )
-      tmp_split = ampersandSplit(tmp)
-      
-      if (queue.length > 0 && tmp_split.length == 1)
+      case '(':
+        statements = parseQuotesAndParentheses(str.substr(batch_parse_pointer))
+        substr1 = str.substr(batch_parse_pointer, statements.parenthetical[0][0][1] + 1)
+        batch_parse_pointer += statements.parenthetical[0][0][1] + 1
+        has_first_parenthesis = true
+        break
+      default:
+        var regex = /\n|$/,
+            regex_result = regex.exec(str.substr(batch_parse_pointer))
+        substr1 = str.substr(batch_parse_pointer, regex_result.index)
+        if (str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]/))
+          parseBatch_command_queue.push(str.substr(batch_parse_pointer, regex_result.index).replace(/^\s+/, ''))
+        batch_parse_pointer += regex_result.index + 1
+        break
+    }
+    
+    if (has_first_parenthesis)
+    {
+      if (str.substr(batch_parse_pointer).match(/^\s*else\s*\(/i))
       {
-          queue[queue.length-1] += str.substr(
-                                     str_pointer,
-                                     str_statements.parenthetical[i][0][1] - str_pointer + 1
-                                   )
+        substr2 = str.substr(batch_parse_pointer, statements.parenthetical[1][0][1] + 1 - substr1.length)
+        parseBatch_command_queue.push((substr1 + substr2).replace(/^\s+/, ''))
+        batch_parse_pointer = pointer_at_function_start + statements.parenthetical[1][0][1] + 1
+        if (str.substr(batch_parse_pointer).match(/^[^\n]+[a-zA-Z0-9_]/))
+          return 'Batch parse error, line ' + batch_line_number
+        else
+        {
+          var regex = /\n|$/,
+          regex_result
+      
+          regex_result = regex.exec(str.substr(batch_parse_pointer))
+          batch_parse_pointer += regex_result.index + 1
+        }
       }
       else
       {
-        for (var j=0; j<tmp_split.length-1; j++)
-        {
-          queue.push(tmp_split[j].replace(/^\s+/, ''))
-        }
-       
-        queue.push(
-                tmp_split[tmp_split.length-1].replace(/^\s+/, '')
-                + str.substr(
-                    str_statements.parenthetical[i][0][0],
-                    str_statements.parenthetical[i][0][1] 
-                    - str_statements.parenthetical[i][0][0] + 1
-                  )
-              )
+        var regex = /\n|$/,
+            regex_result = regex.exec(str.substr(batch_parse_pointer))
+        substr2 = str.substr(batch_parse_pointer, regex_result.index)
+        parseBatch_command_queue.push((substr1 + substr2).replace(/^\s+/, ''))
+        batch_parse_pointer += regex_result.index + 1
       }
-      str_pointer = str_statements.parenthetical[i][0][1] + 1
-    }
-    
-    //add rest of string
-    tmp = str.substr(str_pointer)
-    tmp_split = ampersandSplit(tmp)
-    if (tmp_split.length) 
-    {
-      queue[queue.length-1] += tmp_split.splice(0, 1)
-      queue = queue.concat(tmp_split)
     }
   }
- 
-  return queue
+  
+  var parseForCommand = function(){
+    var statements = parseQuotesAndParentheses(str.substr(batch_parse_pointer))
+    
+    //if DO is followed by parentheses, include the parentheses in pushed command
+    if (str.substr(batch_parse_pointer + statements.parenthetical[0][0][1] + 1).match(/^\s*do\s*\(/i))
+    {
+      parseBatch_command_queue.push(
+                            str.substr(
+                                  batch_parse_pointer, 
+                                  statements.parenthetical[1][0][1] + 1
+                                ).replace(/^\s+/, '')
+                          )
+      
+      batch_parse_pointer += statements.parenthetical[1][0][1] + 1
+      
+      if (str.substr(batch_parse_pointer).match(/^[^\n]+[a-zA-Z0-9_]/))
+        return 'Batch parse error, line ' + batch_line_number
+      else
+      {
+        var regex = /\n|$/,
+        regex_result
+    
+        regex_result = regex.exec(str.substr(batch_parse_pointer))
+        batch_parse_pointer += regex_result.index + 1
+      }
+    }
+    //if DO is not followed by parentheses
+    else
+    {
+      var to_push = str.substr(
+                          batch_parse_pointer, statements.parenthetical[0][0][1] + 1
+                        ).replace(/^\s+/, '')
+      
+      batch_parse_pointer += statements.parenthetical[0][0][1] + 1
+      
+      var regex = /\n|$/,
+          regex_result
+    
+      regex_result = regex.exec(str.substr(batch_parse_pointer))
+      parseBatch_command_queue.push(to_push + str.substr(batch_parse_pointer, regex_result.index))
+      batch_parse_pointer += regex_result.index + 1
+    }
+  }
+  
+  var markGotoSection = function(){
+    var regex = /\n|$/,
+        regex_result
+    
+    regex_result = regex.exec(str.substr(batch_parse_pointer))
+    var goto_section_name = String(str.substr(batch_parse_pointer, regex_result.index).match(/[^\s]+/))
+    batch_parse_pointer += regex_result.index + 1
+    
+    var goto_pointer = parseBatch_command_queue.length
+    parseBatch_goto_markers[goto_section_name.substr(1).toLowerCase()] = goto_pointer
+  }
+  
+  str = str.replace(/^\s+/, '')
+  batch_regex_result = batch_command_regex.exec(str)
+  
+  while (!batch_end_of_file)
+  {
+    var batch_command = batch_regex_result[0].replace(/^\s+/, '').toLowerCase()
+        
+    if (batch_command.match(/:[a-zA-Z0-9_]+/)) batch_command = 'is goto section'
+    
+    var parse_error
+    
+    switch (batch_command)
+    {
+      case 'for':
+        parse_error = parseForCommand()
+        if (parse_error) batch_parse_error = parse_error
+        break
+      case 'if':
+        parse_error = parseIfCommand()
+        if (parse_error) batch_parse_error = parse_error
+        break
+      case 'is goto section':
+        markGotoSection()
+        break
+      default:
+        parseCommandDefault()
+        break
+    }
+    
+    batch_regex_result = batch_command_regex.exec(str.substr(batch_parse_pointer))
+    if (batch_parse_pointer >= str.length || batch_regex_result == null) batch_end_of_file = true
+    batch_line_number++
+  }
+  
+  if (batch_parse_error) return batch_parse_error
+  
+  return parseBatch_command_queue
 }
 
 function parseQuotesAndParentheses(str)
