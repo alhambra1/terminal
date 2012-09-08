@@ -1578,7 +1578,16 @@ function terminal(settings) {
                               
                               for (var i=start; evaluate(i, start, stop); i += step)
                               {
-                                loop_response += doCommand(command.replace(loop_regex, i)) + '\n'
+                                var for_command_queue = parseBatch(command)
+                          
+                                if_and_for_inner_loop = true
+                      
+                                for (var j=0; j<for_command_queue.length; j++)
+                                {
+                                  loop_response += doCommand(for_command_queue[j].replace(loop_regex, i)) + '\n'
+                                }
+                      
+                                if_and_for_inner_loop = false
                               }
                               
                               return loop_response.substr(0, loop_response.length-1)
@@ -1787,8 +1796,17 @@ function terminal(settings) {
                                       }
                                     }
                                     
-                                    loop_response += doCommand(command_tmp)
-                                    if (j < f_item_lines.length-1) loop_response += '\n'
+                                    var for_command_queue = parseBatch(command_tmp)
+                          
+                                    if_and_for_inner_loop = true
+                          
+                                    for (var k=0; k<for_command_queue.length; k++)
+                                    {
+                                      loop_response += doCommand(for_command_queue[k])
+                                      if (k < for_command_queue.length-1) loop_response += '\n'
+                                    }
+                          
+                                    if_and_for_inner_loop = false
                                   }
                                   if (i < items.length-1) loop_response += '\n'
                                 }
