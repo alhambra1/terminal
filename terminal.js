@@ -2103,12 +2103,15 @@ function terminal(settings) {
                           }
                           
                           var response = '',
-                              if_command_queue = parseBatch(str)
+                              if_command_queue = parseBatch('if ' + str)
+                          
+                          if_command_queue[0] = if_command_queue[0].substr(3)
                           
                           if_and_for_inner_loop = true
                           
                           for (var i=0; i<if_command_queue.length; i++)
                           {
+                            if_command_queue[i] = if_command_queue[i].replace(/\n/g, '')
                             response += doIf(if_command_queue[i])
                             if (i < if_command_queue.length - 1) response += '\n'
                           }
