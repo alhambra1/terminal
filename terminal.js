@@ -3176,17 +3176,20 @@ function terminal(settings) {
               summary: 'unsets environment variables',
               help:  'Unsets environment variables\n' +
                      'Syntax: UNSET Variable-Name',
+              passWholeLineAsParameter: true,
               execute:  function(assigned_variable){
                           if (!assigned_variable) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'UNSET'
-                          var assigned_variable = assigned_variable.join(''), response
-                          if (CMD_PATH.variable[assigned_variable])
+                          
+                          var to_unset = splitStringWithQuotedCommas(assigned_variable),
+                              response = ''
+                
+                          for (var i in to_unset)
                           {
-                            delete CMD_PATH.variable[assigned_variable]
-                            response = 'Unset ' + assigned_variable
+                            if (CMD_PATH.variable[to_unset[i]])
+                              delete CMD_PATH.variable[to_unset[i]]
                           }
-                          else response =   'Cannot unset variable ' + assigned_variable + '. ' 
-                                            + assigned_variable + ' does not seem to be assigned'
-                          return response
+                          
+                          return ''
                         }
             }
             
