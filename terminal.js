@@ -212,7 +212,10 @@ function terminal(settings) {
       tmp_objects_q = {
           objects : {},
           new_windows: 0
-        }
+        },
+      
+      //if & for inner-loop
+      if_and_for_inner_loop = false
       
   
   this.C = {
@@ -1807,7 +1810,17 @@ function terminal(settings) {
                               //no flags for-loop
                               for (var i in items)
                               {
-                                loop_response += doCommand(command.replace(loop_regex, items[i])) + '\n'
+                                var for_command_queue = parseBatch(command)
+                          
+                                if_and_for_inner_loop = true
+                      
+                                for (var j=0; j<for_command_queue.length; j++)
+                                {
+                                  loop_response += 
+                                    doCommand(for_command_queue[j].replace(loop_regex, items[i])) + '\n'
+                                }
+                      
+                                if_and_for_inner_loop = false
                               }
                               
                               return loop_response.substr(0, loop_response.length-1)
@@ -2064,40 +2077,25 @@ function terminal(settings) {
                               }
                             }
                             
-                            //split multiple commands
-                            var if_command_statements,
-                                if_command_queue,
-                                if_command_response = ''
-                            
-                            if (evaluation)
-                            {   
-                              //if_command_queue = parseAmpersandAndParentheses(command)
-                              if_command_queue = parseBatch(command)
-                              
-                              for (var i=0; i<if_command_queue.length; i++)
-                              {
-                                if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n'
-                              }
-                              return if_command_response
-                            }
-                            else if (else_string)
-                            {
-                              //if_command_queue = parseAmpersandAndParentheses(else_string)
-                              if_command_queue = parseBatch(else_string)
-                              
-                              for (var i=0; i<if_command_queue.length; i++)
-                              {
-                                if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n'
-                              }
-                              return if_command_response
-                            }
+                            if (evaluation) return doCommand(command)
+                            else if (else_string) return doCommand(else_string)
                             else return false
                           }
-                         
-                          var response = doIf(str)
-                          return (response) ? response : ''
+                          
+                          var response = '',
+                              if_command_queue = parseBatch(str)
+                          
+                          if_and_for_inner_loop = true
+                          
+                          for (var i=0; i<if_command_queue.length; i++)
+                          {
+                            response += doIf(if_command_queue[i])
+                            if (i < if_command_queue.length - 1) response += '\n'
+                          }
+                          
+                          if_and_for_inner_loop = false
+                          
+                          return response
                         }
             },//END IF COMMAND//
             insert: {
@@ -3310,7 +3308,10 @@ function terminal(settings) {
         updateTerminalText()
       }, 2)
       
-      terminal_response = doCommand(input_string)
+      //process input strings as batch files
+      window['terminalq_tmp_batch.bat'] = input_string
+      terminal_response = doCommand('Window:\\terminalq_tmp_batch.bat')
+      //terminal_response = doCommand(input_string)  //original
       doTerminalResponse(terminal_input_line, terminal_response)
     }
     //editor keyboard functions
@@ -4749,13 +4750,18 @@ function terminal(settings) {
     }
     else ampersand_split = [input_string]
     
-    if (command_queue.length > 0) command_queue.concat(ampersand_split)
-    else command_queue = ampersand_split
-    
-    //set input string
-    var cmd_string = cmd_string_clean = command_queue[0].replace(/^\s+/g, '')
-    
-    command_queue.splice(0, 1)
+    var cmd_string
+    if (!if_and_for_inner_loop)
+    {
+      if (command_queue.length > 0) command_queue.concat(ampersand_split)
+      else command_queue = ampersand_split
+      
+      //set input string
+      cmd_string = command_queue[0].replace(/^\s+/g, '')
+      
+      command_queue.splice(0, 1)
+    }
+    else cmd_string = input_string
     
     //if redirection ">"
     if (cmd_string.match(/>/) && !cmd_string.match(/^\s*for\s|^\s*if\s/i))
@@ -4815,6 +4821,7 @@ function terminal(settings) {
     else if (!cmd_array[1])
     {
       //change to lowercase
+      var cmd_array_0_unchanged = cmd_array[0]
       cmd_array[0] = cmd_array[0].toLowerCase()
       
       //if command has .bat extension
@@ -4822,7 +4829,7 @@ function terminal(settings) {
       {
         try
         {
-          var batch_file = parsePath(cmd_array[0])
+          var batch_file = parsePath(cmd_array_0_unchanged)
           
           if (batch_file.parsePathError) doCommand_response = batch_file.parsePathError
           else
@@ -5039,6 +5046,11 @@ function terminal(settings) {
   
   //PARSE BATCH FILE
   parseBatchFile = function(str){
+  
+    //replace & with \n 
+    str = str.replace(/(\^)?&/g, function($0, $1){
+                return $1 ? $0 : '\n'
+              })
   
     var batch_parse_pointer = 0,
         batch_command_regex = /^\s*[^\s]+/,
@@ -5445,27 +5457,13 @@ function blinkBorder(id, color){
     el.style.borderBottom == ('3px solid ' + color) ? 'none' : '3px solid ' + color
 }
 
-function ampersandSplit (str){
-  var answer
-  
-  if (str.match(/&/))
-  {
-    answer = str.split('&')
-    
-    for (var i=answer.length-1; i>=0; i--)
-    {
-      if (answer[i].match(/\^$/) && answer[i + 1] != undefined)
-        answer[i] = answer[i].substr(0, answer[i].length-1)
-                             + '&' + answer.splice(i + 1, 1)
-    }
-  }
-  else answer = [str]
-  
-  return answer
-}
-
 //PARSE BATCH FILE
 parseBatch = function(str){
+
+  //replace & with \n 
+  str = str.replace(/(\^)?&/g, function($0, $1){
+              return $1 ? $0 : '\n'
+            })
 
   var batch_parse_pointer = 0,
       batch_command_regex = /^\s*[^\s]+/,
