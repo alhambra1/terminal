@@ -2106,8 +2106,17 @@ function terminal(settings) {
                               
                               for (var i=0; i<if_command_queue.length; i++)
                               {
+                                //zzz add goto
+                                var is_goto = doCommand(if_command_queue[i])
+                                if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
+                                  if_command_response += doCommand(if_command_queue[i])
+                                else return is_goto
+                                
+                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
+                                /*
                                 if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
+                                */
                               }
                               
                               if_and_for_inner_loop = false
@@ -2123,8 +2132,17 @@ function terminal(settings) {
                               
                               for (var i=0; i<if_command_queue.length; i++)
                               {
+                                //zzz add goto
+                                var is_goto = doCommand(if_command_queue[i])
+                                if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
+                                  if_command_response += doCommand(if_command_queue[i])
+                                else return is_goto
+                                
+                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
+                                /*
                                 if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
+                                */
                               }
                               
                               if_and_for_inner_loop = false
