@@ -2097,28 +2097,45 @@ function terminal(settings) {
                               }
                             }
                             
-                            if (evaluation) return doCommand(command)
-                            else if (else_string) return doCommand(else_string)
+                            if (evaluation) 
+                            {
+                              var if_command_response = '',
+                                  if_command_queue = parseBatch(command)
+                          
+                              if_and_for_inner_loop = true
+                              
+                              for (var i=0; i<if_command_queue.length; i++)
+                              {
+                                if_command_response += doCommand(if_command_queue[i])
+                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                              }
+                              
+                              if_and_for_inner_loop = false
+                              
+                              return if_command_response
+                            }
+                            else if (else_string) 
+                            {
+                              var if_command_response = '',
+                                  if_command_queue = parseBatch(else_string)
+                          
+                              if_and_for_inner_loop = true
+                              
+                              for (var i=0; i<if_command_queue.length; i++)
+                              {
+                                if_command_response += doCommand(if_command_queue[i])
+                                if (i < if_command_queue.length - 1) if_command_response += '\n'
+                              }
+                              
+                              if_and_for_inner_loop = false
+                              
+                              return if_command_response
+                            }
                             else return false
                           }
                           
-                          var response = '',
-                              if_command_queue = parseBatch('if ' + str)
-                          
-                          if_command_queue[0] = if_command_queue[0].substr(3)
-                          
-                          if_and_for_inner_loop = true
-                          
-                          for (var i=0; i<if_command_queue.length; i++)
-                          {
-                            if_command_queue[i] = if_command_queue[i].replace(/\n/g, '')
-                            response += doIf(if_command_queue[i])
-                            if (i < if_command_queue.length - 1) response += '\n'
-                          }
-                          
-                          if_and_for_inner_loop = false
-                          
-                          return response
+                          var response = doIf(str)
+                          return (response) ? response : ''
                         }
             },//END IF COMMAND//
             insert: {
