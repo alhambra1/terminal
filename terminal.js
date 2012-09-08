@@ -1181,7 +1181,9 @@ function terminal(settings) {
               execute:  function(statement){
               
                           if (!statement || !statement.match(/[^\s]/)) return 'ECHO is on.'
-                          return statement.replace(/\s+$/, '')
+                          return statement.replace(/\s+$/, '').replace(/(\^)?\^/g, function($0, $1){
+                                                                 return $1 ? $0 : ''
+                                                               }).replace(/\^(?=\^)/g, '')
                         }
             },
             'echo.': {
@@ -5722,51 +5724,66 @@ function parseQuotesAndParentheses(str)
   var parenthesis_open = [],
       parenthesis_close = [],
       closed_parentheses = [],
-      parentheses_pointer = 0
+      parentheses_pointer = 0,
+      is_escaped
   
   for (var i=0; i<str.length; i++)
   {
     if (str.charAt(i) == "(")
     {
-      //check if parentheses is inside a quotation
-      var parentheses_is_quoted = false
-      for (var j=0; j<closed_quotes.length; j++)
+      //escaped parenthesis
+      is_escaped = false
+      if (i > 0 && str.charAt(i-1) == "^") is_escaped = true
+     
+      if (!is_escaped)
       {
-        if (i > closed_quotes[j][0] && i < closed_quotes[j][1]) parentheses_is_quoted = true
+        //check if parentheses is inside a quotation
+        var parentheses_is_quoted = false
+        for (var j=0; j<closed_quotes.length; j++)
+        {
+          if (i > closed_quotes[j][0] && i < closed_quotes[j][1]) parentheses_is_quoted = true
+        }
+        for (var j=0; j<closed_single_quotes.length; j++)
+        {
+          if (i > closed_single_quotes[j][0] && i < closed_single_quotes[j][1]) parentheses_is_quoted = true
+        }
+        if (!parentheses_is_quoted) parenthesis_open.push(i)
       }
-      for (var j=0; j<closed_single_quotes.length; j++)
-      {
-        if (i > closed_single_quotes[j][0] && i < closed_single_quotes[j][1]) parentheses_is_quoted = true
-      }
-      if (!parentheses_is_quoted) parenthesis_open.push(i)
     }
     else if (str.charAt(i) == ")")
     {
-      //check if parentheses is inside a quotation
-      var parentheses_is_quoted = false
-      for (var j=0; j<closed_quotes.length; j++)
+      //escaped parenthesis
+      is_escaped = false
+      if (i > 0 && str.charAt(i-1) == "^") is_escaped = true
+      
+      if (!is_escaped)
       {
-        if (i > closed_quotes[j][0] && i < closed_quotes[j][1]) parentheses_is_quoted = true
-      }
-      for (var j=0; j<closed_single_quotes.length; j++)
-      {
-        if (i > closed_single_quotes[j][0] && i < closed_single_quotes[j][1]) parentheses_is_quoted = true
-      }
-      if (!parentheses_is_quoted)
-      {
-        parenthesis_close.push(i)
-        //close parentheses
-        if (parenthesis_open.length > 0 && parenthesis_open.length == parenthesis_close.length)
+        //check if parentheses is inside a quotation
+        var parentheses_is_quoted = false
+        for (var j=0; j<closed_quotes.length; j++)
         {
-          closed_parentheses[parentheses_pointer] = []
-          var length = parenthesis_open.length
-          for (var j=0; j<length; j++)
+          if (i > closed_quotes[j][0] && i < closed_quotes[j][1]) parentheses_is_quoted = true
+        }
+        for (var j=0; j<closed_single_quotes.length; j++)
+        {
+          if (i > closed_single_quotes[j][0] && i < closed_single_quotes[j][1]) parentheses_is_quoted = true
+        }
+        if (!parentheses_is_quoted)
+        {
+          parenthesis_close.push(i)
+          //close parentheses
+          if (parenthesis_open.length > 0 && parenthesis_open.length == parenthesis_close.length)
           {
-            closed_parentheses[parentheses_pointer].push([parenthesis_open[j], parenthesis_close[length-j-1]])
+            closed_parentheses[parentheses_pointer] = []
+            var length = parenthesis_open.length
+            for (var j=0; j<length; j++)
+            {
+              closed_parentheses[parentheses_pointer].push([parenthesis_open[j], parenthesis_close[length-j-1]])
+            }
+            parenthesis_open = []
+            parenthesis_close = []
+            parentheses_pointer++
           }
-          parenthesis_open = []
-          parenthesis_close = []
-          parentheses_pointer++
         }
       }
     }
