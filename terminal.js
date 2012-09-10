@@ -4866,12 +4866,13 @@ function terminal(settings) {
     //if enabledelayedexpansion
     else if (cmd_string.match(/^\s*if|^\s*for/i))
     {
-      var set_command_regex = /set\s+[^\s]+\s*=.+&.+%[^%]%|set\s+\/p\s+[^\s]+\s*=.+&.+%[^%]%/i,
+      var set_command_regex = /set\s+[^\s]+\s*=.+[&\n].+%[^%]%|set\s+\/p\s+[^\s]+\s*=.+[&\n].+%[^%]%/i,
           set_command_regex_result = set_command_regex.exec(cmd_string)
       
       if (set_command_regex_result) 
         cmd_string = parseVariable(cmd_string.substr(0, set_command_regex_result.index))
                      + cmd_string.substr(set_command_regex_result.index)
+      else cmd_string = parseVariable(cmd_string)
     }
     else cmd_string = parseVariable(cmd_string)
     
