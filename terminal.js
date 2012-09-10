@@ -1219,6 +1219,16 @@ function terminal(settings) {
                             }
                         }
             },
+            endlocal: {
+              name: 'endlocal',
+              summary: 'ends localization of environment changes',
+              help: 'Ends localization of environment changes enabled by the SETLOCAL command.\nSyntax: ENDLOCAL',
+              execute:  function(options){
+                          
+                          setlocal = false
+                          return ''
+                        }
+            },
             eval: {
               name: 'eval',
               passWholeLineAsParameter: true,
@@ -2862,13 +2872,19 @@ function terminal(settings) {
                     '[ENABLEDELAYEDEXPANSION]',
               execute:  function(options){
                           
+                          setlocal = true
+                          
                           if (options)
                           {
                             for (var i=options.length-1; i>=0; i--)
                             {
                               if (options[i].toLowerCase() == 'enableextensions') enableextensions = true
+                              else if (options[i].toLowerCase() == 'disableextensions') 
+                                enableextensions = false
                               else if (options[i].toLowerCase() == 'enabledelayedexpansion') 
                                 enabledelayedexpansion = true
+                              else if (options[i].toLowerCase() == 'disabledelayedexpansion') 
+                                enabledelayedexpansion = false
                               else return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'SETLOCAL'
                             }
                           }
@@ -4843,7 +4859,10 @@ function terminal(settings) {
     }
     
     //replace variable names with variables
-    cmd_string = parseVariable(cmd_string)
+    
+    //if not enabledelayedexpansion
+    if (!enabledelayedexpansion)
+      cmd_string = parseVariable(cmd_string)
     
     //special case: echo.
     if (cmd_string.match(/^echo\./i)) cmd_string = 'echo. ' + cmd_string.substr(5)
