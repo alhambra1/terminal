@@ -162,6 +162,8 @@ function terminal(settings) {
       setlocal = false,
       enableextensions = true,
       enabledelayedexpansion = false,
+      enableextensions_tmp = true,
+      enabledelayedexpansion_tmp = false,
       
       //editor
       editor_on = false,
@@ -1226,6 +1228,9 @@ function terminal(settings) {
               execute:  function(options){
                           
                           setlocal = false
+                          enableextensions = enableextensions_tmp
+                          enabledelayedexpansion = enabledelayedexpansion_tmp
+                          CMD_PATH.localVariable = {}
                           return ''
                         }
             },
@@ -2878,13 +2883,28 @@ function terminal(settings) {
                           {
                             for (var i=options.length-1; i>=0; i--)
                             {
-                              if (options[i].toLowerCase() == 'enableextensions') enableextensions = true
-                              else if (options[i].toLowerCase() == 'disableextensions') 
+                              options[i] = options[i].toLowerCase()
+                              
+                              if (options[i] == 'enableextensions') 
+                              {
+                                enableextensions_tmp = enableextensions
+                                enableextensions = true
+                              }
+                              else if (options[i] == 'disableextensions') 
+                              {
+                                enableextensions_tmp = enableextensions
                                 enableextensions = false
-                              else if (options[i].toLowerCase() == 'enabledelayedexpansion') 
+                              }
+                              else if (options[i] == 'enabledelayedexpansion')
+                              {
+                                enabledelayedexpansion_tmp = enabledelayedexpansion
                                 enabledelayedexpansion = true
-                              else if (options[i].toLowerCase() == 'disabledelayedexpansion') 
+                              }
+                              else if (options[i] == 'disabledelayedexpansion')
+                              {
+                                enabledelayedexpansion_tmp = enabledelayedexpansion
                                 enabledelayedexpansion = false
+                              }
                               else return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'SETLOCAL'
                             }
                           }
@@ -3199,12 +3219,13 @@ function terminal(settings) {
                         }
             }
             
-          }, //END C.TERMINAL.SYSTEM.TERMINAL.CMD.COMMAND//
+          }, //END C.TERMINAL.SYSTEM.CMD.COMMAND//
           
           //cmd variables
-          variable: {} //END C.TERMINAL.SYSTEM.TERMINAL.CMD.VARIABLE//
+          variable: {}, //END C.TERMINAL.SYSTEM.CMD.VARIABLE//
+          localVariable: {}
           
-        } //END C.TERMINAL.SYSTEM.TERMINAL.CMD//
+        } //END C.TERMINAL.SYSTEM.CMD//
       } //END C.TERMINAL.SYSTEM
     } //END C.TERMINAL
 	} //END C//
