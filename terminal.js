@@ -2676,7 +2676,8 @@ function terminal(settings) {
                           var var_list = [],
                               list_all = false,
                               var_count = 0,
-                              response = ''
+                              response = '',
+                              variable_assignment_path = (setlocal) ? CMD_PATH.localVariable : CMD_PATH.variable
                           
                           if (!variable_assignment) list_all = true          
 
@@ -2694,20 +2695,44 @@ function terminal(settings) {
                                   var_count++
                                 }
                               }
+                              
+                              if (setlocal)
+                              {
+                                for (var i in CMD_PATH.localVariable)
+                                {
+                                  if (!CMD_PATH.variable[i].hidden)
+                                  {
+                                    if (var_list.indexOf(i) == -1) var_list.push(i)
+                                    var_count++
+                                  }
+                                }
+                              }
                             }
                             //list one variable
                             else
                             {  
                               variable_assignment = splitStringWithDoubleQuotes(variable_assignment)[0]
-                              
+                  
                               if (variable_assignment.match(/[^\s]+/))
                               {
                                 for (var i in CMD_PATH.variable)
                                 {
-                                  if (i.match(variable_assignment.match(/[^\s]+/)[0]))
+                                  if (i.match(variable_assignment.replace(/^\s+|\s+$/, '')))
                                   {
                                     var_list.push(i)
                                     var_count++
+                                  }
+                                }
+                                //setlocal condition
+                                if (setlocal)
+                                {
+                                  for (var i in CMD_PATH.localVariable)
+                                  {
+                                    if (i.match(variable_assignment.replace(/^\s+|\s+$/, '')) && var_list.indexOf(i) == -1)
+                                    {
+                                      var_list.push(i)
+                                      var_count++
+                                    }
                                   }
                                 }
                               }
@@ -2718,7 +2743,10 @@ function terminal(settings) {
                               var_list.sort()
                               for (var i=0; i<var_list.length; i++)
                               {
-                                response += var_list[i] + '=' + CMD_PATH.variable[var_list[i]]
+                                var variable_value = (setlocal && CMD_PATH.localVariable[var_list[i]]) ? 
+                                                     CMD_PATH.localVariable[var_list[i]] : CMD_PATH.variable[var_list[i]]
+                                
+                                response += var_list[i] + '=' + variable_value
                                 if (i < var_list.length - 1) response += '\n'
                               }
                               return response
@@ -2749,7 +2777,7 @@ function terminal(settings) {
                               var tmp_item = parsePath(variable_assignment_array[1])
                               
                               if (typeof tmp_item != 'object')
-                                CMD_PATH.variable[variable_assignment_array[0]] = tmp_item
+                                variable_assignment_path[variable_assignment_array[0]] = tmp_item
                               if (tmp_item.parsePathError) return tmp_item.parsePathError
                               else return ''
                             }
@@ -2761,7 +2789,7 @@ function terminal(settings) {
                               //trim variable
                               variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
                             
-                              CMD_PATH.variable[variable_assignment_array[0]] = eval(variable_assignment_array[1])
+                              variable_assignment_path[variable_assignment_array[0]] = eval(variable_assignment_array[1])
                               return ''
                             }
                             //if input
@@ -2804,8 +2832,8 @@ function terminal(settings) {
                                       && !(assignment.substr(found_variable.index-1,2) == '0x'))
                                     return 'Invalid number.  Numeric constants are either decimal (17), ' 
                                            + 'hexadecimal (0x11), or octal (021).'
-                                  if (CMD_PATH.variable[found_variable[0]] != undefined)
-                                    assignment = assignment.replace(found_variable[0], CMD_PATH.variable[found_variable[0]])
+                                  if (variable_assignment_path[found_variable[0]] != undefined)
+                                    assignment = assignment.replace(found_variable[0], variable_assignment_path[found_variable[0]])
                                 }
                                 //replace numbers starting with zero with parsed octal numbers
                                 var regex = /^0[\d]+|[\D]0[\d]+/g, found_variable
@@ -2843,19 +2871,19 @@ function terminal(settings) {
                                 
                                 var tmp_var, tmp_assign
                                   
-                                if (CMD_PATH.variable[variable]) tmp_var = CMD_PATH.variable[variable]
+                                if (variable_assignment_path[variable]) tmp_var = CMD_PATH.variable[variable]
                                 else tmp_var = 0
                                 
                                 if (operator.length > 1)
                                 {
                                   operator = operator.substr(0, operator.length-1)
                                   tmp_assign = eval(tmp_var + operator + '(' + assignment + ')')
-                                  if (!isNaN(tmp_assign)) response = CMD_PATH.variable[variable] = tmp_assign
+                                  if (!isNaN(tmp_assign)) response = variable_assignment_path[variable] = tmp_assign
                                   else return 'Expression is not a number'
                                 }
                                 else
                                 {
-                                  response = CMD_PATH.variable[variable] = eval(assignment)
+                                  response = variable_assignment_path[variable] = eval(assignment)
                                 }
                               }
                               
@@ -2864,7 +2892,7 @@ function terminal(settings) {
                             //if no flags
                             else
                             {
-                              CMD_PATH.variable[variable_assignment_array[0]] = variable_assignment_array[1]
+                              variable_assignment_path[variable_assignment_array[0]] = variable_assignment_array[1]
                               return ''
                             }
                           }
@@ -5412,7 +5440,11 @@ function terminal(settings) {
   
   //replace variable names with variables
   parseVariable = function(str){
-    var regex = /\%[^\%]+\%/, found_variable, to_replace = [], tmp = str
+    var regex = /\%[^\%]+\%/, 
+        found_variable, 
+        to_replace = [], 
+        tmp = str
+        
     while ( (found_variable = regex.exec(tmp)) )
     {
       var trimmed_variable = found_variable[0].substr(1,found_variable[0].length-2)
@@ -5429,8 +5461,15 @@ function terminal(settings) {
         str = str.replace(to_replace[i][1], current_directory.path)
       else if (to_replace[i][0].toLowerCase() == 'random') 
         str = str.replace(to_replace[i][1], Math.round(Math.random()*32768))
-      else if (CMD_PATH.variable[to_replace[i][0]] != undefined)
+      else if (!setlocal && CMD_PATH.variable[to_replace[i][0]] != undefined)
         str = str.replace(to_replace[i][1], CMD_PATH.variable[to_replace[i][0]])
+      else if (setlocal)
+      {
+        if (CMD_PATH.localVariable[to_replace[i][0]] != undefined)
+          str = str.replace(to_replace[i][1], CMD_PATH.localVariable[to_replace[i][0]])
+        else if (CMD_PATH.variable[to_replace[i][0]] != undefined)
+          str = str.replace(to_replace[i][1], CMD_PATH.variable[to_replace[i][0]])
+      }
     }
     
     return str
