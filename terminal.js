@@ -212,10 +212,7 @@ function terminal(settings) {
       tmp_objects_q = {
           objects : {},
           new_windows: 0
-        },
-      
-      //if & for inner-loop
-      if_and_for_inner_loop = false
+        }
       
   
   this.C = {
@@ -1368,487 +1365,511 @@ function terminal(settings) {
                           
                           if (!str) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
                           
-                          var doFor = function(string){
-                            //trim leading space
-                            string = string.replace(/^\s+/, '')
-                            
-                            // /L flag
-                            if (string.substr(0, 2).match(/\/l/i))
-                            {
-                              if (string.substr(2, 1) != ' ') return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
-                              flag_l = true
-                              string = string.substr(2)
+                          var string = str
+                          
+                          //trim leading space
+                          string = string.replace(/^\s+/, '')
+                          
+                          // /L flag
+                          if (string.substr(0, 2).match(/\/l/i))
+                          {
+                            if (string.substr(2, 1) != ' ') return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                            flag_l = true
+                            string = string.substr(2)
+                          }
+                          // /F flag
+                          else if (string.substr(0, 2).match(/\/f/i))
+                          {
+                            if (string.substr(2, 1) != ' ') return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                            flag_f = true
+                            string = string.substr(2).replace(/^\s+/, '')
+                            flag_f_options = {
+                              eol: undefined, 
+                              skip: 0, 
+                              delims: ' \\t', 
+                              tokens: '1', 
+                              usebackq: false
                             }
-                            // /F flag
-                            else if (string.substr(0, 2).match(/\/f/i))
+                          }
+                          
+                          //check for f-flag options
+                          if (string.match(/^"[^"]+"/))
+                          {
+                            if (!flag_f) return string.match(/"[^"]+"/).toString() 
+                                                + ' was unexpected at this time.'
+                            else
                             {
-                              if (string.substr(2, 1) != ' ') return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
-                              flag_f = true
-                              string = string.substr(2).replace(/^\s+/, '')
-                              flag_f_options = {
-                                eol: undefined, 
-                                skip: 0, 
-                                delims: ' \\t', 
-                                tokens: '1', 
-                                usebackq: false
-                              }
-                            }
-                            
-                            //check for f-flag options
-                            if (string.match(/^"[^"]+"/))
-                            {
-                              if (!flag_f) return string.match(/"[^"]+"/).toString() 
-                                                  + ' was unexpected at this time.'
-                              else
-                              {
-                                flag_f_options_string = string.match(/"[^"]+"/).toString()
-                                string = string.substr(flag_f_options_string.length).replace(/^\s+/, '')
-                                
-                                flag_f_options_string = 
-                                  flag_f_options_string.substr(1, flag_f_options_string.length-2).replace(/^\s+/, '')
+                              flag_f_options_string = string.match(/"[^"]+"/).toString()
+                              string = string.substr(flag_f_options_string.length).replace(/^\s+/, '')
                               
-                                //spearate eol, skip, delims, tokens, & usebackq
-                                var flag_f_options_regex = 
-                                      new RegExp (' eol| skip| delims| tokens| usebackq', 'i'),
-                                    flag_f_options_regex_result,
-                                    flag_f_options_regex_result_array = []
-                                   
-                                while (flag_f_options_regex_result = 
-                                        flag_f_options_regex.exec(flag_f_options_string))
+                              flag_f_options_string = 
+                                flag_f_options_string.substr(1, flag_f_options_string.length-2).replace(/^\s+/, '')
+                            
+                              //spearate eol, skip, delims, tokens, & usebackq
+                              var flag_f_options_regex = 
+                                    new RegExp (' eol| skip| delims| tokens| usebackq', 'i'),
+                                  flag_f_options_regex_result,
+                                  flag_f_options_regex_result_array = []
+                                 
+                              while (flag_f_options_regex_result = 
+                                      flag_f_options_regex.exec(flag_f_options_string))
+                              {
+                                flag_f_options_regex_result_array.push(
+                                  flag_f_options_string.substr(0, flag_f_options_regex_result.index)
+                                )
+                                  flag_f_options_string = flag_f_options_string.substr(
+                                    flag_f_options_regex_result.index+1)
+                              }
+                              //add end of string to the options array
+                              flag_f_options_regex_result_array.push(flag_f_options_string)
+                              
+                              //error check and assign options
+                              for (var i=0; i<flag_f_options_regex_result_array.length; i++)
+                              {
+                                if (!flag_f_options_regex_result_array[i].match(/=/) 
+                                    && !flag_f_options_regex_result_array[i].match(/usebackq/i))
+                                  return flag_f_options_regex_result_array[i] + ' was unexpected at this time.'
+                                else if (flag_f_options_regex_result_array[i].match(/usebackq/i))
                                 {
-                                  flag_f_options_regex_result_array.push(
-                                    flag_f_options_string.substr(0, flag_f_options_regex_result.index)
-                                  )
-                                    flag_f_options_string = flag_f_options_string.substr(
-                                      flag_f_options_regex_result.index+1)
-                                }
-                                //add end of string to the options array
-                                flag_f_options_regex_result_array.push(flag_f_options_string)
-                                
-                                //error check and assign options
-                                for (var i=0; i<flag_f_options_regex_result_array.length; i++)
-                                {
-                                  if (!flag_f_options_regex_result_array[i].match(/=/) 
-                                      && !flag_f_options_regex_result_array[i].match(/usebackq/i))
+                                  var tmp = flag_f_options_regex_result_array[i].replace(/usebackq/i, '')
+                                  if (tmp.match(/[^\s]/))
                                     return flag_f_options_regex_result_array[i] + ' was unexpected at this time.'
-                                  else if (flag_f_options_regex_result_array[i].match(/usebackq/i))
-                                  {
-                                    var tmp = flag_f_options_regex_result_array[i].replace(/usebackq/i, '')
-                                    if (tmp.match(/[^\s]/))
-                                      return flag_f_options_regex_result_array[i] + ' was unexpected at this time.'
-                                    else flag_f_options.usebackq = true
-                                  }
-                                  else
-                                  {
-                                    var option = flag_f_options_regex_result_array[i].split('=')
+                                  else flag_f_options.usebackq = true
+                                }
+                                else
+                                {
+                                  var option = flag_f_options_regex_result_array[i].split('=')
+                                  
+                                  option = option[0].replace(/^\s+|\s+$/, '').toLowerCase()
+                                  
+                                  var assignment = 
+                                    flag_f_options_regex_result_array[i].match(/=.*/).toString().substr(1)
                                     
-                                    option = option[0].replace(/^\s+|\s+$/, '').toLowerCase()
-                                    
-                                    var assignment = 
-                                      flag_f_options_regex_result_array[i].match(/=.*/).toString().substr(1)
-                                      
-                                    switch (option)
-                                    {
-                                      case 'eol':
-                                        flag_f_options[option] = assignment
-                                        break
-                                      case 'skip':
-                                        assignment = assignment.replace(/^\s+|\s+$/, '')
-                                        if (!isNaN(assignment)) flag_f_options[option] = assignment.toNumber()
-                                        else return 'Please set "skip" option as a number.'
-                                        break
-                                      case 'delims':
-                                        flag_f_options[option] = assignment
-                                        break
-                                      case 'tokens':
-                                        assignment = assignment.replace(/^\s+|\s+$/, '')
-                                        if (!assignment.match(/[^\d,*-]/)) flag_f_options[option] = assignment
-                                        else return 'Please set "tokens" option as digits and/or wildcards '
-                                                    + '(*) separated by commas or\ndashes.'
-                                        break
-                                    }
+                                  switch (option)
+                                  {
+                                    case 'eol':
+                                      flag_f_options[option] = assignment
+                                      break
+                                    case 'skip':
+                                      assignment = assignment.replace(/^\s+|\s+$/, '')
+                                      if (!isNaN(assignment)) flag_f_options[option] = assignment.toNumber()
+                                      else return 'Please set "skip" option as a number.'
+                                      break
+                                    case 'delims':
+                                      flag_f_options[option] = assignment
+                                      break
+                                    case 'tokens':
+                                      assignment = assignment.replace(/^\s+|\s+$/, '')
+                                      if (!assignment.match(/[^\d,*-]/)) flag_f_options[option] = assignment
+                                      else return 'Please set "tokens" option as digits and/or wildcards '
+                                                  + '(*) separated by commas or\ndashes.'
+                                      break
                                   }
                                 }
                               }
                             }
-                            
-                            //parse quotes and parentheses
-                            var statements = parseQuotesAndParentheses(string)
-                            if (statements.error) return statements.error
-                            
-                            string_array = string.split(' ')
-                             //remove empty elements
-                            for (var i=string_array.length-1; i>=0; i--)
-                            {
-                              if (!string_array[i] || string_array[i].match(/^\s+$/)) string_array.splice(i,1)
-                            }
-                            
-                            //error check
-                            if (!string_array[0])
+                          }
+                          
+                          //parse quotes and parentheses
+                          var statements = parseQuotesAndParentheses(string)
+                          if (statements.error) return statements.error
+                          
+                          string_array = string.split(' ')
+                           //remove empty elements
+                          for (var i=string_array.length-1; i>=0; i--)
+                          {
+                            if (!string_array[i] || string_array[i].match(/^\s+$/)) string_array.splice(i,1)
+                          }
+                          
+                          //error check
+                          if (!string_array[0])
+                            return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                          else
+                          {
+                            string_array[0] = string_array[0].replace(/^\s+|\s+$/g, '')
+                            if (!string_array[0].match(/%[a-zA-Z]/) || string_array[0].length > 2)
+                              return  string_array[0] + ' was unexpected at this time.'
+                            else if (!string_array[1])
                               return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
                             else
                             {
                               string_array[0] = string_array[0].replace(/^\s+|\s+$/g, '')
-                              if (!string_array[0].match(/%[a-zA-Z]/) || string_array[0].length > 2)
-                                return  string_array[0] + ' was unexpected at this time.'
-                              else if (!string_array[1])
-                                return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
-                              else
-                              {
-                                string_array[0] = string_array[0].replace(/^\s+|\s+$/g, '')
-                                variable = string_array[0]
-                              }
+                              variable = string_array[0]
                             }
-                            if (string_array[1])
+                          }
+                          if (string_array[1])
+                          {
+                            if (!string_array[1].match(/\s*in\s*/i)) 
+                              return string_array[1].replace(/^\s+|\s+$/g, '') + ' was unexpected at this time.'
+                            else if (!string_array[2])
+                              return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                          }
+                          if (string_array[2])
+                          {
+                            if (!string_array[2].match(/\s*\(/)) 
+                              return string_array[2].replace(/^\s+|\s+$/g, '') + ' was unexpected at this time.'
+                            else if (!string_array[3])
+                              return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                            else
                             {
-                              if (!string_array[1].match(/\s*in\s*/i)) 
-                                return string_array[1].replace(/^\s+|\s+$/g, '') + ' was unexpected at this time.'
-                              else if (!string_array[2])
-                                return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                              string_array[2] = 
+                                string.substr(statements.parenthetical[0][0][0], 
+                                              statements.parenthetical[0][0][1] -
+                                              statements.parenthetical[0][0][0]+1)
+                                              
+                              string_array[3] = string.substr(statements.parenthetical[0][0][1]+1)
                             }
-                            if (string_array[2])
+                          }
+                          if (string_array[3])
+                          {
+                            if (!string_array[3].match(/^\s*do/i))
                             {
-                              if (!string_array[2].match(/\s*\(/)) 
-                                return string_array[2].replace(/^\s+|\s+$/g, '') + ' was unexpected at this time.'
-                              else if (!string_array[3])
-                                return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
-                              else
-                              {
-                                string_array[2] = 
-                                  string.substr(statements.parenthetical[0][0][0], 
-                                                statements.parenthetical[0][0][1] -
-                                                statements.parenthetical[0][0][0]+1)
-                                                
-                                string_array[3] = string.substr(statements.parenthetical[0][0][1]+1)
-                              }
+                              string_array[3] = string_array[3].replace(/^\s+/g, '').split(' ')
+                              return string_array[3][0] + ' was unexpected at this time.'
                             }
-                            if (string_array[3])
+                            else if (!string_array[3].match(/\s*do\s+[^\s]/i))
+                              return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                          }
+                          
+                          if (!statements.parenthetical[1])
+                            command = string_array[3].substr(string_array[3].toLowerCase().indexOf('do')+3)
+                          else
+                            command = string.substr(statements.parenthetical[1][0][0]+1, 
+                                                    statements.parenthetical[1][0][1] -
+                                                    statements.parenthetical[1][0][0]-1)
+                          //FOR COMMAND FLAGS
+                          //flag l
+                          if (flag_l)
+                          {
+                            string_array[2] = string_array[2].replace(/[\()\s]/g, '')
+                            
+                            //assign start, step, and stop
+                            var tmp = string_array[2].split(','),
+                                start=0, step=0, stop=0
+                            
+                            if (tmp[0] != undefined && !isNaN(tmp[0])) 
                             {
-                              if (!string_array[3].match(/^\s*do/i))
-                              {
-                                string_array[3] = string_array[3].replace(/^\s+/g, '').split(' ')
-                                return string_array[3][0] + ' was unexpected at this time.'
-                              }
-                              else if (!string_array[3].match(/\s*do\s+[^\s]/i))
-                                return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'FOR'
+                              start = 
+                                (tmp[0].toString().substr(0,1) == '0') ? parseInt(tmp[0], 8) : Number(tmp[0])
+                            }
+                            if (tmp[1] != undefined && !isNaN(tmp[1])) 
+                            {
+                              step = 
+                                (tmp[1].toString().substr(0,1) == '0') ? parseInt(tmp[1], 8) : Number(tmp[1])
+                            }
+                            if (tmp[2] != undefined && !isNaN(tmp[2])) 
+                            {
+                              stop = 
+                                (tmp[2].toString().substr(0,1) == '0') ? parseInt(tmp[2], 8) : Number(tmp[2])
                             }
                             
-                            if (!statements.parenthetical[1])
-                              command = string_array[3].substr(string_array[3].toLowerCase().indexOf('do')+3)
-                            else
-                              command = string.substr(statements.parenthetical[1][0][0]+1, 
-                                                      statements.parenthetical[1][0][1] -
-                                                      statements.parenthetical[1][0][0]-1)
-                            //FOR COMMAND FLAGS
-                            //flag l
-                            if (flag_l)
-                            {
-                              string_array[2] = string_array[2].replace(/[\()\s]/g, '')
-                              
-                              //assign start, step, and stop
-                              var tmp = string_array[2].split(','),
-                                  start=0, step=0, stop=0
-                              
-                              if (tmp[0] != undefined && !isNaN(tmp[0])) 
-                              {
-                                start = 
-                                  (tmp[0].toString().substr(0,1) == '0') ? parseInt(tmp[0], 8) : Number(tmp[0])
-                              }
-                              if (tmp[1] != undefined && !isNaN(tmp[1])) 
-                              {
-                                step = 
-                                  (tmp[1].toString().substr(0,1) == '0') ? parseInt(tmp[1], 8) : Number(tmp[1])
-                              }
-                              if (tmp[2] != undefined && !isNaN(tmp[2])) 
-                              {
-                                stop = 
-                                  (tmp[2].toString().substr(0,1) == '0') ? parseInt(tmp[2], 8) : Number(tmp[2])
-                              }
-                              
-                              string_array[3] = string.substr(statements.parenthetical[0][0][1]+1)
-                              // /l flag for-loop
-                              var evaluate = function(c,a,b){
-                                if (a >= b && c >= b) return true
-                                if (a <= b && c <= b) return true
-                                else return false
-                              }
-                              
-                              var regex = variable,
-                                  regex_modifiers = 'g',
-                                  loop_response = '',
-                                  loop_regex = new RegExp(regex, regex_modifiers)
-                              
-                              for (var i=start; evaluate(i, start, stop); i += step)
-                              {
-                                var for_command_queue = parseBatch(command)
-                          
-                                if_and_for_inner_loop = true
-                      
-                                for (var j=0; j<for_command_queue.length; j++)
-                                {
-                                  loop_response += doCommand(for_command_queue[j].replace(loop_regex, i)) + '\n'
-                                }
-                      
-                                if_and_for_inner_loop = false
-                              }
-                              
-                              return loop_response.substr(0, loop_response.length-1)
+                            string_array[3] = string.substr(statements.parenthetical[0][0][1]+1)
+                            // /l flag for-loop
+                            var evaluate = function(c,a,b){
+                              if (a >= b && c >= b) return true
+                              if (a <= b && c <= b) return true
+                              else return false
                             }
-                            //flag f
-                            else if (flag_f && flag_f_options)
+                            
+                            var regex = variable,
+                                regex_modifiers = 'g',
+                                loop_response = '',
+                                loop_regex = new RegExp(regex, regex_modifiers),
+                                splice_pointer = 0
+                            
+                            for (var i=start; evaluate(i, start, stop); i += step)
                             {
-                              var variable_parent = variable
+                              var for_command_queue = parseBatch(command)
                               
-                              string_array[2] = string_array[2].substr(1, string_array[2].length-2)
-                              
-                              //if usebackq and quoted command
-                              var quoted_command,
-                                  usebackq_command_result,
-                                  command_in_single_quotes
-                              
-                              if (string_array[2].match(/^\s*`.+`\s*$/) && flag_f_options.usebackq)
+                              for (var j=0; j<for_command_queue.length; j++)
                               {
-                                quoted_command = string_array[2].replace(/^\s+|\s+$/, '')
-                                quoted_command = quoted_command.substr(1, quoted_command.length-2)
-                              }
-                              else if (string_array[2].match(/^\s*'.+'\s*$/) && !flag_f_options.usebackq)
-                              {
-                                quoted_command = string_array[2].replace(/^\s+|\s+$/, '')
-                                quoted_command = quoted_command.substr(1, quoted_command.length-2)
-                                command_in_single_quotes = true
+                                command_queue.splice(
+                                                splice_pointer + j, 0, 
+                                                for_command_queue[j].replace(loop_regex, i)
+                                              )
+                                if (for_command_queue[j].match(/^\s*goto/i)) 
+                                {
+                                  is_goto = true
+                                  break
+                                }
                               }
                               
-                              //preserve quotes to identify strings
-                              var items,
-                                  regex = variable,
-                                  regex_modifiers = 'g',
-                                  loop_response = '',
-                                  loop_regex = new RegExp(regex, regex_modifiers)
+                              splice_pointer += for_command_queue.length
+                              if (is_goto) break
+                            }
+                            
+                            return ''
+                          }
+                          //flag f
+                          else if (flag_f && flag_f_options)
+                          {
+                            var variable_parent = variable
+                            
+                            string_array[2] = string_array[2].substr(1, string_array[2].length-2)
+                            
+                            //if usebackq and quoted command
+                            var quoted_command,
+                                usebackq_command_result,
+                                command_in_single_quotes
+                            
+                            if (string_array[2].match(/^\s*`.+`\s*$/) && flag_f_options.usebackq)
+                            {
+                              quoted_command = string_array[2].replace(/^\s+|\s+$/, '')
+                              quoted_command = quoted_command.substr(1, quoted_command.length-2)
+                            }
+                            else if (string_array[2].match(/^\s*'.+'\s*$/) && !flag_f_options.usebackq)
+                            {
+                              quoted_command = string_array[2].replace(/^\s+|\s+$/, '')
+                              quoted_command = quoted_command.substr(1, quoted_command.length-2)
+                              command_in_single_quotes = true
+                            }
+                            
+                            //preserve quotes to identify strings
+                            var items,
+                                regex = variable,
+                                regex_modifiers = 'g',
+                                loop_response = '',
+                                loop_regex = new RegExp(regex, regex_modifiers)
+                            
+                            if (!quoted_command)
+                            {
+                              if (!flag_f_options.usebackq)
+                                items = splitStringWithDoubleQuotes(string_array[2], true)
+                              //parse single quotes as strings and double quotes as items
+                              else items = splitStringWithDoubleQuotes(string_array[2], true, true)
+                            }
+                            else items = [doCommand(quoted_command)]
+                            
+                            
+                            var splice_pointer = 0,
+                                is_goto = false
+                            
+                            for (var i=0; i<items.length; i++)
+                            {
+                              //check if item exists or is a quoted string
+                              var f_item,
+                                  f_item_lines
                               
-                              if (!quoted_command)
+                              //if not usebackq
+                              if (!flag_f_options.usebackq)
                               {
-                                if (!flag_f_options.usebackq)
-                                  items = splitStringWithDoubleQuotes(string_array[2], true)
-                                //parse single quotes as strings and double quotes as items
-                                else items = splitStringWithDoubleQuotes(string_array[2], true, true)
+                                if (!quoted_command)
+                                  f_item = (items[i].substr(0,1) == '"') ? 
+                                           items[i].substr(1, items[i].length-2) : parsePath(items[i])
+                                else f_item = items[i]
                               }
-                              else items = [doCommand(quoted_command)]
-                              
-                              for (var i=0; i<items.length; i++)
+                              //if usebackq
+                              else 
                               {
-                                //check if item exists or is a quoted string
-                                var f_item,
-                                    f_item_lines
+                                if (!quoted_command)
+                                {
+                                  if (items[i].substr(0,1) == '\'')
+                                    f_item = items[i].substr(1, items[i].length-2)
+                                  else if (items[i].substr(0,1) == '"')
+                                  {
+                                    items[i] = items[i].substr(1, items[i].length-2)
+                                    f_item = parsePath(items[i])
+                                  }
+                                  else f_item = parsePath(items[i])
+                                }
+                                else f_item = items[i]
+                              }
+                                  
+                              if (f_item.parsePathError) 
+                              {
+                                loop_response += 'The system cannot find the item ' + items[i] + '.'
+                                if (i < items.length-1) loop_response += '\n'
+                                continue
+                              }
                                 
-                                //if not usebackq
-                                if (!flag_f_options.usebackq)
+                              if (typeof(f_item) == 'string' || typeof(f_item) == 'function')
+                              {
+                                f_item_lines = f_item.toString().split('\n')
+                                
+                                //remove empty lines
+                                for (var j=f_item_lines.length-1; j>=0; j--)
                                 {
-                                  if (!quoted_command)
-                                    f_item = (items[i].substr(0,1) == '"') ? 
-                                             items[i].substr(1, items[i].length-2) : parsePath(items[i])
-                                  else f_item = items[i]
+                                  if (f_item_lines[j] == '') f_item_lines.splice(j, 1)
                                 }
-                                //if usebackq
-                                else 
+                                
+                                for (var j=flag_f_options.skip; j<f_item_lines.length; j++)
                                 {
-                                  if (!quoted_command)
+                                  //trim lines if eol is set
+                                  if (flag_f_options.eol)
                                   {
-                                    if (items[i].substr(0,1) == '\'')
-                                      f_item = items[i].substr(1, items[i].length-2)
-                                    else if (items[i].substr(0,1) == '"')
-                                    {
-                                      items[i] = items[i].substr(1, items[i].length-2)
-                                      f_item = parsePath(items[i])
-                                    }
-                                    else f_item = parsePath(items[i])
+                                    var eol_regex = new RegExp(flag_f_options.eol),
+                                        eol_regex_result = eol_regex.exec(f_item_lines[j])
+                                    if (eol_regex_result)
+                                      f_item_lines[j] = f_item_lines[j].substr(0, eol_regex_result.index)
                                   }
-                                  else f_item = items[i]
+                                  //split lines according to delims
+                                  if (flag_f_options.delims != '')
+                                  {
+                                    f_item_lines[j] = f_item_lines[j].split(
+                                                  RegExp('[' + flag_f_options.delims + ']')
+                                                 )
+                                    for (var k=f_item_lines[j].length-1; k>=0; k--)
+                                    {
+                                      f_item_lines[j][k] = f_item_lines[j][k].replace(/^\s+|\s+$/, '')
+                                      if (f_item_lines[j][k] == '') f_item_lines[j].splice(k, 1)
+                                    }
+                                  }
+                                  else f_item_lines[j] = [f_item_lines[j]]
                                 }
+                                
+                                //parse tokens option
+                                var item_tokens = flag_f_options.tokens.split(','),
+                                    token_wildcard_on = false,
+                                    token_wildcard_start
+                                
+                                for (var j=item_tokens.length-1; j>=0; j--)
+                                {
+                                  //token wildcards error check
+                                  if (item_tokens[j].match(/\*./) 
+                                      || (item_tokens[j].match(/\*/g) && item_tokens[j].match(/\*/g).length > 1)) 
+                                    return item_tokens[j].match(/\*./).substr(1) + ' was unexpected at this time.'
+                                  else if (item_tokens[j].match(/\*$/) && j < item_tokens.length-1)
+                                    return ',' + item_tokens[j+1] + ' was unexpected at this time.'
+                                  
+                                  //token wildcards
+                                  else if (item_tokens[j].match(/\*$/))
+                                  {
+                                    token_wildcard_on = true
                                     
-                                if (f_item.parsePathError) 
-                                {
-                                  loop_response += 'The system cannot find the item ' + items[i] + '.'
-                                  if (i < items.length-1) loop_response += '\n'
-                                  continue
-                                }
-                                  
-                                if (typeof(f_item) == 'string' || typeof(f_item) == 'function')
-                                {
-                                  f_item_lines = f_item.toString().split('\n')
-                                  
-                                  //remove empty lines
-                                  for (var j=f_item_lines.length-1; j>=0; j--)
-                                  {
-                                    if (f_item_lines[j] == '') f_item_lines.splice(j, 1)
+                                    if (item_tokens[j].match(/[^\*]/)) 
+                                      item_tokens[j] = item_tokens[j].replace(/\*/, '')
+                                    else item_tokens.splice(j, 1)
                                   }
-                                  
-                                  for (var j=flag_f_options.skip; j<f_item_lines.length; j++)
+                                  else if (!isNaN(item_tokens[j]) && !item_tokens[j] == '')
+                                    item_tokens[j] = Number(item_tokens[j])
+                                  else if (item_tokens[j].match(/-/g) && !item_tokens[j].match(/-/g).length > 1)
                                   {
-                                    //trim lines if eol is set
-                                    if (flag_f_options.eol)
+                                    var tokens_range = item_tokens[j].split('-')
+                                    if (tokens_range[0] <= tokens_range[1])
                                     {
-                                      var eol_regex = new RegExp(flag_f_options.eol),
-                                          eol_regex_result = eol_regex.exec(f_item_lines[j])
-                                      if (eol_regex_result)
-                                        f_item_lines[j] = f_item_lines[j].substr(0, eol_regex_result.index)
-                                    }
-                                    //split lines according to delims
-                                    if (flag_f_options.delims != '')
-                                    {
-                                      f_item_lines[j] = f_item_lines[j].split(
-                                                    RegExp('[' + flag_f_options.delims + ']')
-                                                   )
-                                      for (var k=f_item_lines[j].length-1; k>=0; k--)
+                                      item_tokens.splice(j, 1)
+                                      for (var k=tokens_range[0]; k<=tokens_range[1]; k++)
                                       {
-                                        f_item_lines[j][k] = f_item_lines[j][k].replace(/^\s+|\s+$/, '')
-                                        if (f_item_lines[j][k] == '') f_item_lines[j].splice(k, 1)
+                                        item_tokens.push(k)
                                       }
-                                    }
-                                    else f_item_lines[j] = [f_item_lines[j]]
-                                  }
-                                  
-                                  //parse tokens option
-                                  var item_tokens = flag_f_options.tokens.split(','),
-                                      token_wildcard_on = false,
-                                      token_wildcard_start
-                                  
-                                  for (var j=item_tokens.length-1; j>=0; j--)
-                                  {
-                                    //token wildcards error check
-                                    if (item_tokens[j].match(/\*./) 
-                                        || (item_tokens[j].match(/\*/g) && item_tokens[j].match(/\*/g).length > 1)) 
-                                      return item_tokens[j].match(/\*./).substr(1) + ' was unexpected at this time.'
-                                    else if (item_tokens[j].match(/\*$/) && j < item_tokens.length-1)
-                                      return ',' + item_tokens[j+1] + ' was unexpected at this time.'
-                                    
-                                    //token wildcards
-                                    else if (item_tokens[j].match(/\*$/))
-                                    {
-                                      token_wildcard_on = true
-                                      
-                                      if (item_tokens[j].match(/[^\*]/)) 
-                                        item_tokens[j] = item_tokens[j].replace(/\*/, '')
-                                      else item_tokens.splice(j, 1)
-                                    }
-                                    else if (!isNaN(item_tokens[j]) && !item_tokens[j] == '')
-                                      item_tokens[j] = Number(item_tokens[j])
-                                    else if (item_tokens[j].match(/-/g) && !item_tokens[j].match(/-/g).length > 1)
-                                    {
-                                      var tokens_range = item_tokens[j].split('-')
-                                      if (tokens_range[0] <= tokens_range[1])
-                                      {
-                                        item_tokens.splice(j, 1)
-                                        for (var k=tokens_range[0]; k<=tokens_range[1]; k++)
-                                        {
-                                          item_tokens.push(k)
-                                        }
-                                      }
-                                      else item_tokens.splice(j, 1)
                                     }
                                     else item_tokens.splice(j, 1)
                                   }
-                                  item_tokens.sort()
-                                  
-                                  //set token_wildcards_start
-                                  if (token_wildcard_on)
-                                  {
-                                    var wildcard_start = 
-                                          (item_tokens.length > 0) ? item_tokens[item_tokens.length-1] : 0
-                                    item_tokens.push ('*' + String(wildcard_start))
-                                  }
-                                  
-                                  //replace variables with tokens
-                                  var variable_parent_number = variable.charCodeAt(1),
-                                        is_upper_case = 
-                                          (variable_parent == variable_parent.toUpperCase) ? true : false,
-                                      variables_regex =
-                                        (is_upper_case) ? '%[A-Z]' : '%[a-z]',
-                                      num_variables_to_replace = 
-                                        command.match(RegExp(variables_regex, 'g')).length,
-                                      command_tmp
-                                          
-                                  for (var j=0; j<f_item_lines.length; j++)
-                                  {
-                                    command_tmp = command.toString()
-                                          
-                                    for (var k=0; k<num_variables_to_replace; k++)
-                                    {
-                                      var match = command_tmp.match(RegExp(variables_regex))[0],
-                                          token_index = item_tokens[match.charCodeAt(1) - variable_parent_number]
-                                      
-                                      //if token is not a wildcard decrement token to match array index
-                                      if (!isNaN(token_index)) token_index--
-                                      
-                                      if (match && f_item_lines[j][token_index])
-                                      {
-                                        command_tmp = command_tmp.replace(match, f_item_lines[j][token_index])
-                                      }
-                                      //if token is a wildcard
-                                      else if (match && typeof(token_index) == 'string')
-                                      {
-                                        var wildcard_replacement = ''
-                                        
-                                        for (var l=Number(token_index.substr(1)); l<f_item_lines[j].length; l++)
-                                        {
-                                          wildcard_replacement += f_item_lines[j][l]
-                                          if (l < f_item_lines[j].length-1) wildcard_replacement += ' '
-                                        }
-                                        
-                                        command_tmp = command_tmp.replace(match, wildcard_replacement)
-                                      }
-                                    }
-                                    
-                                    var for_command_queue = parseBatch(command_tmp)
-                          
-                                    if_and_for_inner_loop = true
-                          
-                                    for (var k=0; k<for_command_queue.length; k++)
-                                    {
-                                      loop_response += doCommand(for_command_queue[k])
-                                      if (k < for_command_queue.length-1) loop_response += '\n'
-                                    }
-                          
-                                    if_and_for_inner_loop = false
-                                  }
-                                  if (i < items.length-1) loop_response += '\n'
+                                  else item_tokens.splice(j, 1)
                                 }
-                              }
-                              
-                              return loop_response
-                            }
-                            //if no for command flags
-                            else
-                            {
-                              string_array[2] = string_array[2].substr(1, string_array[2].length-2)
-                              
-                              var items = splitStringWithDoubleQuotes(string_array[2], true),
-                                  regex = variable,
-                                  regex_modifiers = 'g',
-                                  loop_response = '',
-                                  loop_regex = new RegExp(regex, regex_modifiers)
-                              
-                              //no flags for-loop
-                              for (var i in items)
-                              {
-                                var for_command_queue = parseBatch(command)
-                          
-                                if_and_for_inner_loop = true
-                      
-                                for (var j=0; j<for_command_queue.length; j++)
+                                item_tokens.sort()
+                                
+                                //set token_wildcards_start
+                                if (token_wildcard_on)
                                 {
-                                  loop_response += 
-                                    doCommand(for_command_queue[j].replace(loop_regex, items[i])) + '\n'
+                                  var wildcard_start = 
+                                        (item_tokens.length > 0) ? item_tokens[item_tokens.length-1] : 0
+                                  item_tokens.push ('*' + String(wildcard_start))
                                 }
-                      
-                                if_and_for_inner_loop = false
+                                
+                                //replace variables with tokens
+                                var variable_parent_number = variable.charCodeAt(1),
+                                      is_upper_case = 
+                                        (variable_parent == variable_parent.toUpperCase) ? true : false,
+                                    variables_regex =
+                                      (is_upper_case) ? '%[A-Z](?!%)' : '%[a-z](?!%)',
+                                    num_variables_to_replace = 
+                                      command.match(RegExp(variables_regex, 'g')).length,
+                                    command_tmp
+                                        
+                                for (var j=0; j<f_item_lines.length; j++)
+                                {
+                                  command_tmp = command.toString()
+                                        
+                                  for (var k=0; k<num_variables_to_replace; k++)
+                                  {
+                                    var match = command_tmp.match(RegExp(variables_regex))[0],
+                                        token_index = item_tokens[match.charCodeAt(1) - variable_parent_number]
+                                    
+                                    //if token is not a wildcard decrement token to match array index
+                                    if (!isNaN(token_index)) token_index--
+                                    
+                                    if (match && f_item_lines[j][token_index])
+                                    {
+                                      command_tmp = command_tmp.replace(match, f_item_lines[j][token_index])
+                                    }
+                                    //if token is a wildcard
+                                    else if (match && typeof(token_index) == 'string')
+                                    {
+                                      var wildcard_replacement = ''
+                                      
+                                      for (var l=Number(token_index.substr(1)); l<f_item_lines[j].length; l++)
+                                      {
+                                        wildcard_replacement += f_item_lines[j][l]
+                                        if (l < f_item_lines[j].length-1) wildcard_replacement += ' '
+                                      }
+                                      
+                                      command_tmp = command_tmp.replace(match, wildcard_replacement)
+                                    }
+                                  }
+                                  
+                                  var for_command_queue = parseBatch(command_tmp)
+                              
+                                  for (var k=0; k<for_command_queue.length; k++)
+                                  {
+                                    command_queue.splice(
+                                                    splice_pointer + k, 0, 
+                                                    for_command_queue[k]
+                                                  )
+                                    if (for_command_queue[k].match(/^\s*goto/i)) 
+                                    {
+                                      is_goto = true
+                                      break
+                                    }
+                                  }
+                                  
+                                  splice_pointer += f_item_lines.length * for_command_queue.length
+                                  if (is_goto) break
+                                }
                               }
                               
-                              return loop_response.substr(0, loop_response.length-1)
+                              if (is_goto) break
                             }
+                            
+                            return ''
                           }
-                          
-                          var response = doFor(str)
-                          if (response) return (response) ? response : ''
+                          //if no for command flags
+                          else
+                          {
+                            string_array[2] = string_array[2].substr(1, string_array[2].length-2)
+                            
+                            var items = splitStringWithDoubleQuotes(string_array[2], true),
+                                regex = variable,
+                                regex_modifiers = 'g',
+                                loop_response = '',
+                                loop_regex = new RegExp(regex, regex_modifiers),
+                                splice_pointer = 0,
+                                is_goto = false
+                            
+                            //no flags for-loop
+                            for (var i in items)
+                            {
+                              var for_command_queue = parseBatch(command)
+                              
+                              for (var j=0; j<for_command_queue.length; j++)
+                              {
+                                command_queue.splice(
+                                                splice_pointer + j, 0, 
+                                                for_command_queue[j].replace(loop_regex, items[i])
+                                              )
+                                if (for_command_queue[j].match(/^\s*goto/i)) 
+                                {
+                                  is_goto = true
+                                  break
+                                }
+                              }
+                              
+                              splice_pointer += for_command_queue.length
+                              if (is_goto) break
+                            }
+                            
+                            return ''
+                          }
                         }
             }, //END FOR COMMAND//
             'goto': {
@@ -1923,237 +1944,206 @@ function terminal(settings) {
                           
                           if (!str) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'IF'
                           
-                          var doIf = function(string){
-                            var evaluation, command
+                          var string = str,
+                              evaluation,
+                              command
+                          
+                          //trim leading space
+                          string = string.replace(/^\s+/,'')
+                          
+                          // /I
+                          var case_insensitive = false
+                          if (string.substr(0, 2).match(/\/i/i))
+                          {
+                            string = string.substr(2)
+                            case_insensitive = true
+                          }
+                          
+                          //NOT
+                          var not = false
+                          if (string.substr(0, 3).match(/not/i))
+                          {
+                            string = string.substr(3).replace(/^\s+/, '')
+                            not = true
+                          }
+                          
+                          //parse quotes and parentheses
+                          var statements = parseQuotesAndParentheses(string)
+                          if (statements.error) return statements.error
+                          
+                          //else string
+                          var else_string
+                          if (string.match(/else/i) && statements.parenthetical[0])
+                          {
+                            else_string = string.substr(statements.parenthetical[0][0][1] + 1)
+                            else_string = else_string.substr(else_string.toLowerCase().indexOf('else') + 4)
+                            else_string = else_string.replace(/^\s+/g, '')
+                            if (else_string.substr(0, 1) == '(')
+                              else_string = string.substr(statements.parenthetical[1][0][0] + 1,
+                                                          statements.parenthetical[1][0][1] -
+                                                          statements.parenthetical[1][0][0] - 1)
+                          }
+                          
+                          //if exist / defined
+                          if (string.substr(0, 5).match(/exist/i) || string.substr(0, 7).match(/defined/i))
+                          {
+                            var target_item
                             
-                            //trim leading space
-                            string = string.replace(/^\s+/,'')
-                            
-                            // /I
-                            var case_insensitive = false
-                            if (string.substr(0, 2).match(/\/i/i))
+                            if (string.substr(0, 5).match(/exist/i))
                             {
-                              string = string.substr(2)
-                              case_insensitive = true
-                            }
-                            
-                            //NOT
-                            var not = false
-                            if (string.substr(0, 3).match(/not/i))
-                            {
-                              string = string.substr(3).replace(/^\s+/, '')
-                              not = true
-                            }
-                            
-                            //parse quotes and parentheses
-                            var statements = parseQuotesAndParentheses(string)
-                            if (statements.error) return statements.error
-                            
-                            //else string
-                            var else_string
-                            if (string.match(/else/i) && statements.parenthetical[0])
-                            {
-                              else_string = string.substr(statements.parenthetical[0][0][1] + 1)
-                              else_string = else_string.substr(else_string.toLowerCase().indexOf('else') + 4)
-                              else_string = else_string.replace(/^\s+/g, '')
-                              if (else_string.substr(0, 1) == '(')
-                                else_string = string.substr(statements.parenthetical[1][0][0] + 1,
-                                                            statements.parenthetical[1][0][1] -
-                                                            statements.parenthetical[1][0][0] - 1)
-                            }
-                            
-                            //if exist / defined
-                            if (string.substr(0, 5).match(/exist/i) || string.substr(0, 7).match(/defined/i))
-                            {
-                              var target_item
-                              
-                              if (string.substr(0, 5).match(/exist/i))
+                              if (string.match(/\s*exist\s+"/i))
+                                target_item = string.substr(statements.quoted[0][0] + 1, 
+                                                            statements.quoted[0][1] -
+                                                            statements.quoted[0][0] - 1)
+                              else
                               {
-                                if (string.match(/\s*exist\s+"/i))
-                                  target_item = string.substr(statements.quoted[0][0] + 1, 
-                                                              statements.quoted[0][1] -
-                                                              statements.quoted[0][0] - 1)
-                                else
-                                {
-                                  target_item = string.substr(5)
-                                  target_item = target_item.match(/[^\s]+/).toString()
-                                }
-                                
-                                //evaluation
-                                if (!not && doCommand('show /e ' + target_item)) evaluation = true
-                                else if (not && !doCommand('show /e ' + target_item)) evaluation = true
-                                
-                                command = string.substr(5)
-                              }
-                              else if (string.substr(0, 7).match(/defined/i) && enableextensions)
-                              {
-                                if (string.match(/\s*defined\s+"/i))
-                                  target_item = string.substr(statements.quoted[0][0]+1, 
-                                                              statements.quoted[0][1]-
-                                                              statements.quoted[0][0]-1)
-                                else
-                                {
-                                  target_item = string.substr(7)
-                                  target_item = target_item.match(/[^\s]+/).toString()
-                                }
-                                
-                                //evaluation
-                                if (!not && CMD_PATH.variable[target_item] != undefined) evaluation = true
-                                else if (not && CMD_PATH.variable[target_item] == undefined) evaluation = true
-                                
-                                command = string.substr(7)
-                              }
-                              
-                              //command
-                              command = command.substr(command.indexOf(target_item)+target_item.length+1)
-                              command = command.replace(/^\s+/, '')
-                              if (command.substr(0, 1) == '(')
-                                command = string.substr(statements.parenthetical[0][0][0]+1,
-                                                        statements.parenthetical[0][0][1]-
-                                                        statements.parenthetical[0][0][0]-1)
-                            }
-                            //if compare_op
-                            else
-                            {
-                              if (string.substr(0, 1) == "\"" 
-                                  && !string.match(/^"[^"]+"\s*[^\s"]+\s*"[^"]+"/)) return false
-                              
-                              var compare_op_array = {
-                                    equ: '==',
-                                    neq: '!=',
-                                    lss: '<',
-                                    leq: '<=',
-                                    gtr: '>',
-                                    geq: '>='
-                                  }
-                              
-                              //compare-op
-                              var compare_op, compare_op_str
-                              if (string.match(/^[^\s=]*\s+[^\=\s]+\s+[^\s=]/) && enableextensions)
-                              {
-                                compare_op_str = string.replace(/\s+/g, ' ')
-                                compare_op_str = compare_op_str.split(' ')
-                                compare_op_str = compare_op_str[1].toLowerCase()
-                                if (compare_op_array[compare_op_str]) compare_op = compare_op_array[compare_op_str]
-                                else return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'IF'
-                              }
-                              else if (!string.match(/^[^\s=]*\s*==\s*[^\s=]/))
-                                return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'IF'
-                              
-                              var string_array
-                              if (!compare_op)
-                                string_array = 
-                                  [string.substr(0, string.indexOf('==')), string.substr(string.indexOf('==')+2)]
-                              else 
-                                string_array = 
-                                  [string.substr(0, string.toLowerCase().indexOf(compare_op_str)), 
-                                  string.substr(string.toLowerCase().indexOf(compare_op_str)+compare_op_str.length)]
-
-                              //string1
-                              var string1 = string_array[0]
-                              if (string.substr(0, 1) != "\"" && string1.match('"')) return false
-                              string1 = string1.replace(/^\s+|\s+$|"/g, '')
-                              
-                              //string2
-                              //trim leading space
-                              string_array[1] = string_array[1].replace(/^\s+/,'')
-                              var string2_array = string_array[1].split(' '),
-                                  string2 = string2_array[0]
-                              if (string.substr(0, 1) != "\"" && string2.match('"')) return false
-                              string2 = string2.replace(/^\s+|\s+$|"/g, '')
-                              //command
-                              command = string2_array.slice(1).join(' ')
-                              command = command.replace(/^\s+/, '')
-                              if (command.substr(0, 1) == '(')
-                                command = string.substr(statements.parenthetical[0][0][0]+1,
-                                                        statements.parenthetical[0][0][1]-
-                                                        statements.parenthetical[0][0][0]-1)
-                              
-                              //conditional processing
-                              if (case_insensitive)
-                              {
-                                string1 = string1.toLowerCase()
-                                string2 = string2.toLowerCase()
-                              }
-                              
-                              if (!isNaN(string1) && !isNaN(string2) && enableextensions)
-                              {
-                                if (string1.substr(0,1) == '0') string1 = parseInt(string1, 8)
-                                else string1 = Number(string1)
-                                if (string2.substr(0,1) == '0') string2 = parseInt(string2, 8)
-                                else string2 = Number(string2)
+                                target_item = string.substr(5)
+                                target_item = target_item.match(/[^\s]+/).toString()
                               }
                               
                               //evaluation
-                              if (!compare_op)
-                              {
-                                if (!not && string1 == string2) evaluation = true
-                                else if (not && string1 != string2) evaluation = true
-                              }
+                              if (!not && doCommand('show /e ' + target_item)) evaluation = true
+                              else if (not && !doCommand('show /e ' + target_item)) evaluation = true
+                              
+                              command = string.substr(5)
+                            }
+                            else if (string.substr(0, 7).match(/defined/i) && enableextensions)
+                            {
+                              if (string.match(/\s*defined\s+"/i))
+                                target_item = string.substr(statements.quoted[0][0]+1, 
+                                                            statements.quoted[0][1]-
+                                                            statements.quoted[0][0]-1)
                               else
                               {
-                                if (!not && (eval(string1 + compare_op + string2))) evaluation = true
-                                else if (not && !(eval(string1 + compare_op + string2))) evaluation = true
+                                target_item = string.substr(7)
+                                target_item = target_item.match(/[^\s]+/).toString()
                               }
+                              
+                              //evaluation
+                              if (!not && CMD_PATH.variable[target_item] != undefined) evaluation = true
+                              else if (not && CMD_PATH.variable[target_item] == undefined) evaluation = true
+                              
+                              command = string.substr(7)
                             }
                             
-                            if (evaluation) 
+                            //command
+                            command = command.substr(command.indexOf(target_item)+target_item.length+1)
+                            command = command.replace(/^\s+/, '')
+                            if (command.substr(0, 1) == '(')
+                              command = string.substr(statements.parenthetical[0][0][0]+1,
+                                                      statements.parenthetical[0][0][1]-
+                                                      statements.parenthetical[0][0][0]-1)
+                          }
+                          //if compare_op
+                          else
+                          {
+                            if (string.substr(0, 1) == "\"" 
+                                && !string.match(/^"[^"]+"\s*[^\s"]+\s*"[^"]+"/)) return false
+                            
+                            var compare_op_array = {
+                                  equ: '==',
+                                  neq: '!=',
+                                  lss: '<',
+                                  leq: '<=',
+                                  gtr: '>',
+                                  geq: '>='
+                                }
+                            
+                            //compare-op
+                            var compare_op, compare_op_str
+                            if (string.match(/^[^\s=]*\s+[^\=\s]+\s+[^\s=]/) && enableextensions)
                             {
-                              var if_command_response = '',
-                                  if_command_queue = parseBatch(command)
-                          
-                              if_and_for_inner_loop = true
-                              
-                              for (var i=0; i<if_command_queue.length; i++)
-                              {
-                                //zzz add goto
-                                var is_goto = doCommand(if_command_queue[i])
-                                if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
-                                  if_command_response += doCommand(if_command_queue[i])
-                                else return is_goto
-                                
-                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
-                                /*
-                                if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
-                                */
-                              }
-                              
-                              if_and_for_inner_loop = false
-                              
-                              return if_command_response
+                              compare_op_str = string.replace(/\s+/g, ' ')
+                              compare_op_str = compare_op_str.split(' ')
+                              compare_op_str = compare_op_str[1].toLowerCase()
+                              if (compare_op_array[compare_op_str]) compare_op = compare_op_array[compare_op_str]
+                              else return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'IF'
                             }
-                            else if (else_string) 
+                            else if (!string.match(/^[^\s=]*\s*==\s*[^\s=]/))
+                              return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'IF'
+                            
+                            var string_array
+                            if (!compare_op)
+                              string_array = 
+                                [string.substr(0, string.indexOf('==')), string.substr(string.indexOf('==')+2)]
+                            else 
+                              string_array = 
+                                [string.substr(0, string.toLowerCase().indexOf(compare_op_str)), 
+                                string.substr(string.toLowerCase().indexOf(compare_op_str)+compare_op_str.length)]
+
+                            //string1
+                            var string1 = string_array[0]
+                            if (string.substr(0, 1) != "\"" && string1.match('"')) return false
+                            string1 = string1.replace(/^\s+|\s+$|"/g, '')
+                            
+                            //string2
+                            //trim leading space
+                            string_array[1] = string_array[1].replace(/^\s+/,'')
+                            var string2_array = string_array[1].split(' '),
+                                string2 = string2_array[0]
+                            if (string.substr(0, 1) != "\"" && string2.match('"')) return false
+                            string2 = string2.replace(/^\s+|\s+$|"/g, '')
+                            //command
+                            command = string2_array.slice(1).join(' ')
+                            command = command.replace(/^\s+/, '')
+                            if (command.substr(0, 1) == '(')
+                              command = string.substr(statements.parenthetical[0][0][0]+1,
+                                                      statements.parenthetical[0][0][1]-
+                                                      statements.parenthetical[0][0][0]-1)
+                            
+                            //conditional processing
+                            if (case_insensitive)
                             {
-                              var if_command_response = '',
-                                  if_command_queue = parseBatch(else_string)
-                          
-                              if_and_for_inner_loop = true
-                              
-                              for (var i=0; i<if_command_queue.length; i++)
-                              {
-                                //zzz add goto
-                                var is_goto = doCommand(if_command_queue[i])
-                                if (!is_goto.type || (is_goto.type && is_goto.type != 'goto'))
-                                  if_command_response += doCommand(if_command_queue[i])
-                                else return is_goto
-                                
-                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
-                                /*
-                                if_command_response += doCommand(if_command_queue[i])
-                                if (i < if_command_queue.length - 1) if_command_response += '\n' 
-                                */
-                              }
-                              
-                              if_and_for_inner_loop = false
-                              
-                              return if_command_response
+                              string1 = string1.toLowerCase()
+                              string2 = string2.toLowerCase()
                             }
-                            else return false
+                            
+                            if (!isNaN(string1) && !isNaN(string2) && enableextensions)
+                            {
+                              if (string1.substr(0,1) == '0') string1 = parseInt(string1, 8)
+                              else string1 = Number(string1)
+                              if (string2.substr(0,1) == '0') string2 = parseInt(string2, 8)
+                              else string2 = Number(string2)
+                            }
+                            
+                            //evaluation
+                            if (!compare_op)
+                            {
+                              if (!not && string1 == string2) evaluation = true
+                              else if (not && string1 != string2) evaluation = true
+                            }
+                            else
+                            {
+                              if (!not && (eval(string1 + compare_op + string2))) evaluation = true
+                              else if (not && !(eval(string1 + compare_op + string2))) evaluation = true
+                            }
                           }
                           
-                          var response = doIf(str)
-                          return (response) ? response : ''
+                          if (evaluation) 
+                          {
+                            var if_command_queue = parseBatch(command)
+                              
+                            for (var i=0; i<if_command_queue.length; i++)
+                            {
+                              command_queue.splice(i, 0, if_command_queue[i])
+                              if (if_command_queue[i].match(/^\s*goto/i)) break
+                            }
+                            
+                            return ''
+                          }
+                          else if (else_string) 
+                          {
+                            var if_command_queue = parseBatch(else_string)
+                              
+                            for (var i=0; i<if_command_queue.length; i++)
+                            {
+                              command_queue.splice(i, 0, if_command_queue[i])
+                              if (if_command_queue[i].match(/^\s*goto/i)) break
+                            }
+                            
+                            return ''
+                          }
+                          else return ''
                         }
             },//END IF COMMAND//
             insert: {
@@ -3372,7 +3362,6 @@ function terminal(settings) {
       //process input strings as batch files
       window['terminalq_tmp_batch.bat'] = input_string
       terminal_response = doCommand('Window:\\terminalq_tmp_batch.bat')
-      //terminal_response = doCommand(input_string)  //original
       doTerminalResponse(terminal_input_line, terminal_response)
     }
     //editor keyboard functions
@@ -3940,8 +3929,8 @@ function terminal(settings) {
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
                                    + '<br />' 
                                    + ((command_queue[0] 
-                                       || batch_command_pointer < batch_command_queue.length) ? '' : '<br />')
-  
+                                       || batch_command_pointer < batch_command_queue.length - 1) ? '' : '<br />')
+
       terminal_response = ''
       
       setTimeout(function(){
@@ -3952,7 +3941,7 @@ function terminal(settings) {
         setTimeout(function(){terminalDiv.scrollTop = terminalDiv.scrollHeight}, 5)
     
         if (command_queue[0]) doTerminalResponse('', doCommand(command_queue[0]))
-        else if (batch_command_pointer < batch_command_queue.length)
+        else if (batch_command_pointer < batch_command_queue.length - 1)
         {
           batch_command_pointer++
           if (batch_command_pointer == batch_command_queue.length - 1) batch_processing_on = false
@@ -4346,8 +4335,8 @@ function terminal(settings) {
                           })
       
       if (terminal_response != '\n' && terminal_response != '') terminal_response += '\n'
-      if (!command_queue[0] && (!batch_processing_on || !(batch_command_pointer < batch_command_queue.length))
-          || (batch_command_pointer == 0 && batch_command_queue.length == 1)) terminal_response += '\n'
+      if (!command_queue[0] && (!batch_processing_on || !(batch_command_pointer < batch_command_queue.length - 1))) 
+        terminal_response += '\n'
      
       terminal_response = terminal_response.replace(/\n\r?/g, '<br />')
    
@@ -4812,17 +4801,14 @@ function terminal(settings) {
     else ampersand_split = [input_string]
     
     var cmd_string
-    if (!if_and_for_inner_loop)
-    {
-      if (command_queue.length > 0) command_queue.concat(ampersand_split)
-      else command_queue = ampersand_split
-      
-      //set input string
-      cmd_string = command_queue[0].replace(/^\s+/g, '')
-      
-      command_queue.splice(0, 1)
-    }
-    else cmd_string = input_string
+    
+    if (command_queue.length > 0) command_queue.concat(ampersand_split)
+    else command_queue = ampersand_split
+    
+    //set input string
+    cmd_string = command_queue[0].replace(/^\s+/g, '')
+    
+    command_queue.splice(0, 1)
     
     //if redirection ">"
     if (cmd_string.match(/>/) && !cmd_string.match(/^\s*for\s|^\s*if\s/i))
