@@ -4863,6 +4863,17 @@ function terminal(settings) {
     //if not enabledelayedexpansion
     if (!enabledelayedexpansion)
       cmd_string = parseVariable(cmd_string)
+    //if enabledelayedexpansion
+    else if (cmd_string.match(/^\s*if|^\s*for/i))
+    {
+      var set_command_regex = /set\s+[^\s]+\s*=.+&.+%[^%]%|set\s+\/p\s+[^\s]+\s*=.+&.+%[^%]%/i,
+          set_command_regex_result = set_command_regex.exec(cmd_string)
+      
+      if (set_command_regex_result) 
+        cmd_string = parseVariable(cmd_string.substr(0, set_command_regex_result.index))
+                     + cmd_string.substr(set_command_regex_result.index)
+    }
+    else cmd_string = parseVariable(cmd_string)
     
     //special case: echo.
     if (cmd_string.match(/^echo\./i)) cmd_string = 'echo. ' + cmd_string.substr(5)
