@@ -5159,13 +5159,15 @@ function terminal(settings) {
           substr3,
           statements,
           has_first_parenthesis = false,
-          pointer_at_function_start = batch_parse_pointer
+          pointer_at_function_start = batch_parse_pointer,
+          batch_parse_error
       
       //parse first parentheses, else, or newline 
       switch (result)
       {
         case '(':
           statements = parseQuotesAndParentheses(str.substr(batch_parse_pointer))
+          if (statements.error) return statements.error
           substr1 = str.substr(batch_parse_pointer, statements.parenthetical[0][0][1] + 1)
           batch_parse_pointer += statements.parenthetical[0][0][1] + 1
           has_first_parenthesis = true
@@ -5211,6 +5213,8 @@ function terminal(settings) {
     
     var parseForCommand = function(){
       var statements = parseQuotesAndParentheses(str.substr(batch_parse_pointer))
+      
+      if (statements.error) return statements.error
       
       //if DO is followed by parentheses, include the parentheses in pushed command
       if (str.substr(batch_parse_pointer + statements.parenthetical[0][0][1] + 1).match(/^\s*do\s*\(/i))
@@ -5295,14 +5299,13 @@ function terminal(settings) {
       }
       
       batch_regex_result = batch_command_regex.exec(str.substr(batch_parse_pointer))
-      if (batch_parse_pointer >= str.length || batch_regex_result == null) batch_end_of_file = true
+      if (batch_parse_pointer >= str.length || batch_regex_result == null || parse_error) batch_end_of_file = true
       batch_line_number++
     }
     
     if (batch_parse_error) return batch_parse_error
-   
     //execute batch file
-    if (batch_command_queue.length > 0)
+    else if (batch_command_queue.length > 0)
     {
       batch_processing_on = true
       doCommand(batch_command_queue[0])
