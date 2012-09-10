@@ -4866,7 +4866,7 @@ function terminal(settings) {
     //if enabledelayedexpansion
     else if (cmd_string.match(/^\s*if|^\s*for/i))
     {
-      var set_command_regex = /set\s+[^\s]+\s*=.+[&\n].+%[^%]%|set\s+\/p\s+[^\s]+\s*=.+[&\n].+%[^%]%/i,
+      var set_command_regex = /set\s+(\/[pa]\s+)?[^\s]+\s*=.+[&\n].+%[^%]%/i,
           set_command_regex_result = set_command_regex.exec(cmd_string)
       
       if (set_command_regex_result) 
