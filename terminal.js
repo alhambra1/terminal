@@ -1788,17 +1788,16 @@ function terminal(settings) {
                                         (variable_parent == variable_parent.toUpperCase) ? true : false,
                                     variables_regex =
                                       (is_upper_case) ? '%[A-Z](?!%)' : '%[a-z](?!%)',
+                                    variables_to_replace = command.match(RegExp(variables_regex, 'g')),
                                     num_variables_to_replace = 
                                       command.match(RegExp(variables_regex, 'g')).length,
-                                    command_tmp
+                                    command_tmp = command.toString()
                                         
                                 for (var j=0; j<f_item_lines.length; j++)
                                 {
-                                  command_tmp = command.toString()
-                                        
                                   for (var k=0; k<num_variables_to_replace; k++)
                                   {
-                                    var match = command_tmp.match(RegExp(variables_regex))[0],
+                                    var match = variables_to_replace[k],
                                         token_index = item_tokens[match.charCodeAt(1) - variable_parent_number]
                                     
                                     //if token is not a wildcard decrement token to match array index
@@ -1920,7 +1919,7 @@ function terminal(settings) {
                                 response += CMD_PATH.command[i].name.toUpperCase() 
                                          + '  ' + CMD_PATH.command[i].summary + '\n'
                             }
-                            return response.substr(0, response.length-2)
+                            return response.substr(0, response.length - 1)
                           }
                           else if (CMD_PATH.command[command_name] && CMD_PATH.command[command_name].help)
                             return CMD_PATH.command[command_name].help
