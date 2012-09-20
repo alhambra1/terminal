@@ -178,13 +178,11 @@
         {
           case "logout":
             if (!isset($_SESSION["is_logged_in"])) $server_response = "";
-            elseif ($_SESSION["is_logged_in"] != $user) 
-              $server_response = "Please enter the correct username to logout.";
             else 
             {
               unset($_SESSION["is_logged_in"]);
               if (isset($_SESSION["chat"])) unset($_SESSION["chat"]);
-              $server_response = "Logged out " . $user . ".";
+              $server_response = "Logged out.";
             }
             break;
           case "login":
@@ -194,7 +192,7 @@
             {
               $server_response = "Only one user may be logged in any one browser window.";
             }
-            elseif ($pass == "") $server_response = "Error: Please enter password.";
+            elseif ($pass == "") $server_response = "Login incorrect.";
             else
             {
               $myq = "SELECT * FROM  `terminal_server_users` WHERE  `user` = '" . $user . "'";
@@ -213,7 +211,7 @@
                 $_SESSION["is_logged_in"] = $user;
                 $server_response = "Welcome " . $user . "!";
               }
-              else $server_response = "Password does not match.";
+              else $server_response = "Login incorrect.";
             }
             break;
           default:
