@@ -157,6 +157,7 @@ function terminal(settings) {
       set_input = false,
       set_input_variable = '',
       set_input_text = '',
+      hidden_input = false,
       
       //setlocal
       setlocal = false,
@@ -294,9 +295,9 @@ function terminal(settings) {
               help: 'Changes working directory or displays current directory\nSyntax: CD [Directory-Path]',
               passWholeLineAsParameter: true,
               execute:  function(path_name){
-                          //current_directory structure {name, object, path as string}
+                          //terminal_current_directory structure {name, object, path as string}
                           
-                          if (!path_name || path_name == '') return current_directory.path
+                          if (!path_name || path_name == '') return terminal_current_directory.path
                           else
                           {
                             //trim path name
@@ -309,16 +310,16 @@ function terminal(settings) {
                             
                             if (path_name == '..')
                             {
-                              if (current_directory.parentDirectory)
+                              if (terminal_current_directory.parentDirectory)
                               {
-                                if (current_directory.parentDirectory.object.length == 1)
+                                if (terminal_current_directory.parentDirectory.object.length == 1)
                                 {
-                                  current_directory = ROOT_PATH.directoryInfo
+                                  terminal_current_directory = ROOT_PATH.directoryInfo
                                   return ''
                                 }
                                 else
                                 {
-                                  var parent = current_directory.parentDirectory.object
+                                  var parent = terminal_current_directory.parentDirectory.object
                                   //check if path is accessible
                                   var target_directory
                                   if (ROOT_PATH[parent[1]])
@@ -333,7 +334,7 @@ function terminal(settings) {
                                       return 'The system cannot find the path specified'
                                     }
                                   }
-                                  current_directory = target_directory.directoryInfo
+                                  terminal_current_directory = target_directory.directoryInfo
                                   return ''
                                 }
                               }
@@ -342,7 +343,7 @@ function terminal(settings) {
                             
                             if (path_name == ROOT) 
                             {
-                              current_directory = ROOT_PATH.directoryInfo
+                              terminal_current_directory = ROOT_PATH.directoryInfo
                               return ''
                             }
                             else
@@ -361,10 +362,10 @@ function terminal(settings) {
                               {
                                 //get current directory path
                                 var tmp_current_directory = ROOT_PATH
-                                for (var i=1; i<current_directory.object.length; i++)
+                                for (var i=1; i<terminal_current_directory.object.length; i++)
                                 {
-                                  if (tmp_current_directory[current_directory.object[i]]) 
-                                    tmp_current_directory = tmp_current_directory[current_directory.object[i]]
+                                  if (tmp_current_directory[terminal_current_directory.object[i]]) 
+                                    tmp_current_directory = tmp_current_directory[terminal_current_directory.object[i]]
                                 }
                                 //check if path is accessible
                                 var target_directory
@@ -386,7 +387,7 @@ function terminal(settings) {
                                   return 'directoryInfo object is undefined, try mapping ' + path_name +
                                          ' (for help, type HELP MAP)'
                                 
-                                current_directory = target_directory.directoryInfo
+                                terminal_current_directory = target_directory.directoryInfo
                                 return ''
                               }
                               //if path-name starts with root
@@ -406,7 +407,7 @@ function terminal(settings) {
                                     return 'The system cannot find the path specified'
                                   }
                                 }
-                                current_directory = target_directory.directoryInfo
+                                terminal_current_directory = target_directory.directoryInfo
                                 return ''
                               }
                             }
@@ -421,7 +422,7 @@ function terminal(settings) {
                           setTimeout(function(){
                               if (welcome_message) terminalHistory.innerHTML = welcome_message + '<br /><br />'
                               else terminalHistory.innerHTML = ''
-                              terminalText.innerHTML = current_directory.path 
+                              terminalText.innerHTML = terminal_current_directory.path 
                                                        + promptSymbol + '<span id="'
                                                        + caretID
                                                        + '" style="border-bottom: 3px solid ' 
@@ -457,11 +458,11 @@ function terminal(settings) {
                   
                 if (!path.match(/\\/))
                 {
-                  if (!current_directory) return 'Cannot copy item ' + path + '. Current directory is not set.'
+                  if (!terminal_current_directory) return 'Cannot copy item ' + path + '. Current directory is not set.'
                   else
                   {
                     copy_to_name = path
-                    copy_to_path = current_directory.path
+                    copy_to_path = terminal_current_directory.path
                     copy_to_obj = parsePath(copy_to_path)
                   }
                 }
@@ -525,7 +526,7 @@ function terminal(settings) {
                   evalObjectMethods(copy_to_obj[copy_to_name])
                   
                   var map_path = copy_to_path
-                  if (!map_path.match(/Window:\\/)) map_path = current_directory.path + '\\' + map_path
+                  if (!map_path.match(/Window:\\/)) map_path = terminal_current_directory.path + '\\' + map_path
                   doCommand('map "' + map_path + '"')
                   
                   return '        1 object(s) copied.'
@@ -563,7 +564,7 @@ function terminal(settings) {
                   
                   if (!path.match(/\\/))
                   {
-                    if (!current_directory)
+                    if (!terminal_current_directory)
                     {
                       response += 'Cannot remove item ' + path + '. Current directory is not set.\n'
                       continue
@@ -571,7 +572,7 @@ function terminal(settings) {
                     else 
                     {
                       item_name = path
-                      item_path = current_directory.path
+                      item_path = terminal_current_directory.path
                       obj = parsePath(item_path)
                     }
                   }
@@ -730,10 +731,10 @@ function terminal(settings) {
                               }
                               else
                               {
-                                if (!current_directory)
+                                if (!terminal_current_directory)
                                   return 'Current directory is not set. Please set current directory'
                                   
-                                target_directory = parsePath(current_directory.path)
+                                target_directory = parsePath(terminal_current_directory.path)
                                 wildcard_item = path.replace(/\*/g, '.*')
                                 wildcard_path = ''
                               }
@@ -977,10 +978,10 @@ function terminal(settings) {
                               path_object,
                               sort_array = []
                               
-                          if (!item_name_and_path[1] && !current_directory) 
+                          if (!item_name_and_path[1] && !terminal_current_directory) 
                             return 'Current directory is not set. Please set current directory ' +
                                    'or specify a mapped directory.'
-                          else if (!item_name_and_path[1] && current_directory) path = current_directory.path
+                          else if (!item_name_and_path[1] && terminal_current_directory) path = terminal_current_directory.path
                           else path = item_name_and_path[1]
                           
                           path_object = parsePath(path)
@@ -1201,7 +1202,7 @@ function terminal(settings) {
                     'Syntax: EDIT Path',
               passWholeLineAsParameter: true,
               execute:  function(path){
-                          if (!current_directory) return 'Please set current directory'
+                          if (!terminal_current_directory) return 'Please set current directory'
                           if (!path) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'EDIT'
                           path = splitStringWithDoubleQuotes(path)[0]
                         
@@ -2405,7 +2406,7 @@ function terminal(settings) {
                   
                   if (!path.match(/\\/))
                   {
-                    if (!current_directory)
+                    if (!terminal_current_directory)
                     {
                       response += 'Cannot make directory ' + path + '. Current directory is not set.\n'
                       continue
@@ -2413,7 +2414,7 @@ function terminal(settings) {
                     else 
                     {
                       new_dir_name = path
-                      new_dir_path = current_directory.path
+                      new_dir_path = terminal_current_directory.path
                       obj = parsePath(new_dir_path)
                     }
                   }
@@ -2629,7 +2630,7 @@ function terminal(settings) {
                   
                   if (!path.match(/\\/))
                   {
-                    if (!current_directory)
+                    if (!terminal_current_directory)
                     {
                       response += 'Cannot remove directory ' + path + '. Current directory is not set.\n'
                       continue
@@ -2637,7 +2638,7 @@ function terminal(settings) {
                     else 
                     {
                       dir_name = path
-                      dir_path = current_directory.path
+                      dir_path = terminal_current_directory.path
                       obj = parsePath(dir_path)
                     }
                   }
@@ -2668,8 +2669,8 @@ function terminal(settings) {
               name: 'set',
               summary: 'sets or displays information about environment variables',
               help: 'Sets or displays information about environment variables\n' +
-                    'Syntax: SET [/P | /A | /I | /E] Variable-Name [=Value]\n' +
-                    'Options: /P input, /A arithmetic, /I item-path, /E eval',
+                    'Syntax: SET [/P | /A | /I | /E | /PW] Variable-Name [=Value]\n' +
+                    'Options: /P input, /A arithmetic, /I item-path, /E eval, /PW hidden-input',
               passWholeLineAsParameter: true,
               execute:  function(variable_assignment){
                           var var_list = [],
@@ -2794,8 +2795,11 @@ function terminal(settings) {
                             //if input
                             else if (variable_assignment_array[0].substr(0,2).match(/\/p/i))
                             {
+                              var hidden = (variable_assignment_array[0].substr(2,1).match(/w/i)) ? true : false,
+                                  substr_index = (hidden) ? 3 : 2 
+                                  
                               //remove parameter
-                              variable_assignment_array[0] = variable_assignment_array[0].substr(2)
+                              variable_assignment_array[0] = variable_assignment_array[0].substr(substr_index)
                               //trim variable
                               variable_assignment_array[0] = variable_assignment_array[0].replace(/^\s+|\s+$/g, '')
                               //paint input string if any
@@ -2803,7 +2807,8 @@ function terminal(settings) {
                               return {
                                   responseType: 'input',
                                   inputText: variable_assignment_array[1],
-                                  variable: variable_assignment_array[0]
+                                  variable: variable_assignment_array[0],
+                                  hidden: hidden
                                 }
                             }
                             //if arithmetic
@@ -2946,7 +2951,7 @@ function terminal(settings) {
                     'Syntax: SHOW Path',
               passWholeLineAsParameter: true,
               execute:  function(path){
-                          if (!current_directory) return 'Please set current directory'
+                          if (!terminal_current_directory) return 'Please set current directory'
                           if (!path) return CMD_PATH.response.COMMAND_SYNTAX_ERROR + 'SHOW'
                           path = splitStringWithDoubleQuotes(path)[0]
                           
@@ -3122,7 +3127,7 @@ function terminal(settings) {
                               D = 'HTML&#9552;' //dash
                               */
                               
-                          if (!current_directory) return 'Please set current directory'
+                          if (!terminal_current_directory) return 'Please set current directory'
                          
                           var target_directory = parsePath(path)
                           
@@ -3296,12 +3301,13 @@ function terminal(settings) {
     }
   }
   
-  var current_directory = eval(starting_directory)
-  if (!current_directory) current_directory = {object: '', path: ''}
+  //global variable - terminal_current_directory
+  terminal_current_directory = eval(starting_directory)
+  if (!terminal_current_directory) terminal_current_directory = {object: '', path: ''}
   
   //welcome message
   if (welcome_message) terminalHistory.innerHTML = welcome_message + '<br /><br />'
-  terminalText.innerHTML = current_directory.path + promptSymbol 
+  terminalText.innerHTML = terminal_current_directory.path + promptSymbol 
                            + '<span id="' + this.settings.caretID + '" style="border-bottom: 3px solid ' 
                            + this.settings.fontColor + ';">&nbsp;</span>'
   
@@ -3330,13 +3336,13 @@ function terminal(settings) {
   terminal.onkeyup = function(e){
     if (!e) e = window.event
     
-    if (e.keyCode != 13 && !paginate_on) updateTerminalText()
+    if (e.keyCode != 13 && !paginate_on && !hidden_input) updateTerminalText()
   }
 
   terminal.onkeydown = function(e){
     if (!e) e = window.event
     
-    if (e.keyCode != 13 && !paginate_on) updateTerminalText()
+    if (e.keyCode != 13 && !paginate_on && !hidden_input) updateTerminalText()
   }
   
   //TERMINAL ONKEYPRESS SCRIPT//
@@ -3368,7 +3374,7 @@ function terminal(settings) {
     {
       if (terminal_line_history.length > 0)
       {
-        if (!current_directory) current_directory = {object: '', path: ''}
+        if (!terminal_current_directory) terminal_current_directory = {object: '', path: ''}
       
         if (terminal_line_history_pointer == -1) terminal_line_history_pointer = terminal_line_history.length-1
         else if (terminal_line_history_pointer > 0) terminal_line_history_pointer--
@@ -3388,7 +3394,7 @@ function terminal(settings) {
       if (terminal_line_history.length > 0 && terminal_line_history_pointer < terminal_line_history.length-1)
       {
         terminal_line_history_pointer++
-        if (!current_directory) current_directory = {object: '', path: ''}
+        if (!terminal_current_directory) terminal_current_directory = {object: '', path: ''}
         
         if (terminal_line_history[terminal_line_history_pointer])
         {
@@ -3404,7 +3410,7 @@ function terminal(settings) {
     else if (e.keyCode == '13' && set_input == false && paginate_on == false && editor_on == false)
     {
       var input_string = terminal.value,
-          terminal_input_line = current_directory.path + promptSymbol
+          terminal_input_line = terminal_current_directory.path + promptSymbol
                                + input_string.replaceArray(['&', '<', '>', ' '], 
                                       ['&amp;', '&lt;', '&gt;', '&nbsp;'])
       
@@ -3423,10 +3429,26 @@ function terminal(settings) {
         updateTerminalText()
       }, 2)
       
-      //process input strings as batch files
+      //TERMINAL SERVER PLUGIN - RETURN-KEY PROCESS 
+      
+      /* Original Return-Key Process:
       window['terminalq_tmp_batch.bat'] = input_string
       terminal_response = doCommand('Window:\\terminalq_tmp_batch.bat')
       doTerminalResponse(terminal_input_line, terminal_response)
+      */
+      
+      //if not connected to server
+      if (input_string.match(/^\s*help\s+\$server|^\s*help\s+\$chat|^\s*serverlogin\s/) || (!server_connection_on && !input_string.match(/^\s*\$/)))
+      {
+        //process input strings as batch files
+        window['terminalq_tmp_batch.bat'] = input_string
+        terminal_response = doCommand('Window:\\terminalq_tmp_batch.bat')
+        doTerminalResponse(terminal_input_line, terminal_response)
+      }
+      //if server commands
+      else doServerCommand(input_string, terminal_input_line, server_window_id)
+      //END TERMINAL SERVER PLUGIN - RETURN-KEY PROCESS
+      
     }
     //editor keyboard functions
     //move editor caret on return
@@ -3985,7 +4007,7 @@ function terminal(settings) {
       CMD_PATH.command.set.execute(set_input_variable + '=' + terminal.value)
       set_input = false
       
-      var text = terminal.value
+      var text = (hidden_input) ? '' : terminal.value
     
       terminalHistory.innerHTML += ((terminalHistory.innerHTML.match(/<br \/>$|<br>$/i)) ? '' : '<br />')
                                    + set_input_text 
@@ -3996,6 +4018,7 @@ function terminal(settings) {
                                        || batch_command_pointer < batch_command_queue.length - 1) ? '' : '<br />')
 
       terminal_response = ''
+      hidden_input = false
       
       setTimeout(function(){
         set_input_variable = ''
@@ -4215,7 +4238,7 @@ function terminal(settings) {
         substr2,
         blink_color = (caret_color) ? caret_color : fontColor_rgb
     
-    if (!set_input && !editor_on) terminalText.innerHTML = current_directory.path + promptSymbol
+    if (!set_input && !editor_on) terminalText.innerHTML = terminal_current_directory.path + promptSymbol
     else if (set_input) terminalText.innerHTML = set_input_text
     else if (editor_on && !editor_find_on) terminalText.innerHTML = ''
     
@@ -4438,6 +4461,8 @@ function terminal(settings) {
       set_input_variable = terminal_response.variable
       set_input_text = terminal_response.inputText
       
+      if (terminal_response.hidden) hidden_input = true
+      
       //convert html tags unless they are escaped
       set_input_text = set_input_text.replace(/(HTML)?&/g, function($0, $1){
                             return $1 ? '&' : '&amp;'
@@ -4481,8 +4506,8 @@ function terminal(settings) {
       edited_item_types_pointer = edited_item_types.indexOf(terminal_response.itemType)
       
       if (!edited_item.match(/Window:\\/)) 
-        edited_item = current_directory.path 
-                      + ((current_directory.path.substr(-1) == '\\') ? '' : '\\')
+        edited_item = terminal_current_directory.path 
+                      + ((terminal_current_directory.path.substr(-1) == '\\') ? '' : '\\')
                       + edited_item
       
       terminal.style.width = terminalText.style.width
@@ -4842,7 +4867,7 @@ function terminal(settings) {
   //DO COMMAND
   var doCommand = function(input_string){
     
-    if (!current_directory) current_directory = {object: '', path: ''}
+    if (!terminal_current_directory) terminal_current_directory = {object: '', path: ''}
     
     //command queue & redirection
     var ampersand_split,
@@ -5147,9 +5172,9 @@ function terminal(settings) {
     if (!redirection_on) return doCommand_response
     else
     {
-      if (!redirection_target.match(/\\/) && current_directory) 
-        redirection_target = current_directory.path 
-                             + ((current_directory.path == 'Window:\\')? '' : '\\') 
+      if (!redirection_target.match(/\\/) && terminal_current_directory) 
+        redirection_target = terminal_current_directory.path 
+                             + ((terminal_current_directory.path == 'Window:\\')? '' : '\\') 
                              + redirection_target
         
       if (redirection_target.match(/\\/g).length > 1) 
@@ -5456,8 +5481,8 @@ function terminal(settings) {
         str = str.replace(to_replace[i][1], dosDate('date'))
       else if (to_replace[i][0].toLowerCase() == 'time') 
         str = str.replace(to_replace[i][1], dosDate('time'))
-      else if (to_replace[i][0].toLowerCase() == 'cd' && current_directory) 
-        str = str.replace(to_replace[i][1], current_directory.path)
+      else if (to_replace[i][0].toLowerCase() == 'cd' && terminal_current_directory) 
+        str = str.replace(to_replace[i][1], terminal_current_directory.path)
       else if (to_replace[i][0].toLowerCase() == 'random') 
         str = str.replace(to_replace[i][1], Math.round(Math.random()*32768))
       else if (!setlocal && CMD_PATH.variable[to_replace[i][0]] != undefined)
@@ -5486,9 +5511,9 @@ function terminal(settings) {
       if (path_array[0]+'\\' != ROOT)
       {
         var current = ROOT_PATH
-        for (var i=1; i<current_directory.object.length; i++)
+        for (var i=1; i<terminal_current_directory.object.length; i++)
         {
-          current = current[current_directory.object[i]]
+          current = current[terminal_current_directory.object[i]]
         }
         
         //check if path is accessible
@@ -5519,16 +5544,16 @@ function terminal(settings) {
         target_directory = tmp
       }
     }
-    else if (current_directory.path == ROOT)
+    else if (terminal_current_directory.path == ROOT)
     {
       target_directory = ROOT_PATH
     }
     else
     {
       var tmp = ROOT_PATH
-      for (var i=1; i<current_directory.object.length; i++)
+      for (var i=1; i<terminal_current_directory.object.length; i++)
       {
-        tmp = tmp[current_directory.object[i]]
+        tmp = tmp[terminal_current_directory.object[i]]
       }
       target_directory = tmp
     }
@@ -5544,7 +5569,357 @@ function terminal(settings) {
     doCommand('map terminal')
   }, 50)
   
+  
+  //TERMINAL SERVER PLUGIN
+  
+  //TERMINAL SERVER PLUGIN - CONFIGURATION & VARIABLES
+  var server_connection_on = false,
+      server_chat_on = false,
+      server_is_logged_in = undefined,
+      server_window_id = terminalHistoryID,
+      terminal_current_directory_tmp = undefined,
+      serverGetNewMessageInterval = undefined,
+      server_name = "Lana",
+      server_prompt_symbol_1 = ":",
+      server_prompt_symbol_2 = "$ ",
+      server_path = "~",
+      
+      TERMINAL_DIV_OBJECT = terminalDiv,
+      TERMINAL_TEXT_OBJECT =  terminalText,
+      TERMINAL_CARET_ID = caretID,
+      TERMINAL_INPUT_OBJECT_ID = terminalID,
+      TERMINAL_PASSWORD_INPUT_OBJECT_ID = "terminalqpw"
+    
+  //TERMINAL SERVER PLUGIN - FUNCTION  
+  function doServerCommand(server_input, terminal_input_html, window_id){
+
+    //FUNCTIONS
+    var serverSecureLink = function(input_html, output_id) {
+      /**
+      * Creates a random string
+      * @returns {string} A random string
+      */
+      function randomString() {
+        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz"
+        var string_length = 128
+        var randomstring = ''
+        for (var i=0; i<string_length; i++) {
+          var rnum = Math.floor(Math.random() * chars.length)
+          randomstring += chars.substring(rnum,rnum+1)
+        }
+        return randomstring
+      }
+      // Initialize the password variable
+      var password
+      // If a connection hasn't been made
+      if (!sessionStorage.isConnected){
+        // Create a random AES key
+        var hashObj = new jsSHA(randomString(), "ASCII")
+        password = hashObj.getHash("SHA-512", "HEX")
+        
+        $('#' + output_id).append(input_html + "<br />Connecting...<br /><br />")
+          setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 2)
+        
+        // Authenticate with the server
+        $.jCryption.authenticate(password, "encrypt.php?generateKeypair=true", "encrypt.php?handshake=true", function(AESKey) {
+          
+          // Save the current AES key into the sessionStorage
+          sessionStorage.setItem("isConnected","1")
+          sessionStorage.setItem("password",password)
+          
+          server_connection_on = true
+          $('#' + output_id).html($('#' + output_id).html().match(/.+(?=<br>$)/)[0] 
+                                  + "Secure connection established with " + server_name + ".<br /><br />")
+          setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 5)
+        }, function() {
+          // Authentication failed
+          $('#' + output_id).html($('#' + output_id).html().match(/.+(?=<br>$)/)[0] 
+                                  + "Authentication failed.<br /><br />")
+          setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 5)
+        })
+      } else {
+        // Store the password from sessionStorage in the password variables
+        password = sessionStorage.password
+        
+        server_connection_on = true
+        $('#' + output_id).append(input_html + "<br />Already connected.<br /><br />")
+        setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 5)
+      }
+    }
+
+    function serverGetNewMessage(output_id){
+        
+      var password = sessionStorage.password,
+          encryptedString = $.jCryption.encrypt("$chat getNewMessage", password)
+      
+      $.ajax({
+        url: "encrypt.php?",
+        dataType: "json",
+        type: "POST",
+        data: {
+          jCryption: encryptedString
+        },
+        success: function(response) {
+          // Logging
+          var decrypted_response = $.jCryption.decrypt(response.data,password)
+          
+          if (decrypted_response != "")
+          {
+            $('#' + output_id).append(decrypted_response + ((server_chat_on) ? "" : "<br />") + "<br />")
+            setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 5)
+          }
+        }
+      })
+    }
+
+    serverSendMessage = function(message, input_html, output_id) {
+      var password = sessionStorage.password
+
+      // Encrypt the data with the AES key
+      var encryptedString = $.jCryption.encrypt(message,password)
+      // logging
+      // Send the data to the server
+      $.ajax({
+        url: "encrypt.php?",
+        dataType: "json",
+        type: "POST",
+        data: {
+          jCryption: encryptedString
+        },
+        success: function(response) {
+          
+          var decrypted_response = $.jCryption.decrypt(response.data,password),
+              server_response_logging = true
+          
+          if (message.match(/^\s*\$server\s+login/i) 
+              && decrypted_response.match(/^welcome/i))
+          {
+            server_is_logged_in = decrypted_response.match(/[^\s]+(?=!$)/)[0]
+            
+            terminal_current_directory_tmp = {
+                path: JSON.stringify(terminal_current_directory),
+                prompt: promptSymbol
+              }
+            promptSymbol = server_prompt_symbol_2
+            terminal_current_directory.path = "[" + server_is_logged_in + "@" + server_name.toLowerCase()
+                                              + server_prompt_symbol_1 + server_path + "]"
+            
+            TERMINAL_TEXT_OBJECT.innerHTML = terminal_current_directory.path + promptSymbol 
+                                             + TERMINAL_TEXT_OBJECT.innerHTML.match(/<span.+/i)[0]
+          }
+          else if (message.match(/^\s*\$server\s+logout/i) 
+              && decrypted_response.match(/^Logged out/i))
+          {
+            server_is_logged_in = undefined
+            if (terminal_current_directory_tmp)
+            {
+              terminal_current_directory = JSON.parse(terminal_current_directory_tmp.path)
+              promptSymbol = terminal_current_directory_tmp.prompt
+              terminal_current_directory_tmp = undefined
+            }
+            server_chat_on = false
+            if (serverGetNewMessageInterval != undefined) clearInterval(serverGetNewMessageInterval)
+            TERMINAL_TEXT_OBJECT.innerHTML = terminal_current_directory.path + promptSymbol 
+                                             + TERMINAL_TEXT_OBJECT.innerHTML.match(/<span.+/i)[0]
+          }
+          else if (message.match(/^\s*\$chat\s+on/i)
+              && decrypted_response == "Chat on.") 
+          {
+            server_chat_on = true
+            serverGetNewMessageInterval = setInterval(function(){serverGetNewMessage(output_id)},5000)
+            decrypted_response += "<br />"
+          }
+          else if (message.match(/^\s*\$chat\s+off/i) 
+              && decrypted_response == "Chat off.")
+          {
+            server_chat_on = false
+            clearInterval(serverGetNewMessageInterval)
+          }
+          else if (message.match(/^\s*\$server\s+unlink/i) 
+              && decrypted_response == "Disconnected from Lana.")
+          {
+            server_connection_on = false
+            server_chat_on = false
+            server_is_logged_in = undefined
+            if (terminal_current_directory_tmp)
+            {
+              terminal_current_directory = JSON.parse(terminal_current_directory_tmp.path)
+              promptSymbol = terminal_current_directory_tmp.prompt
+              terminal_current_directory_tmp = undefined
+            }
+            if (serverGetNewMessageInterval != undefined) clearInterval(serverGetNewMessageInterval)
+            sessionStorage.clear()
+            
+            $('#' + output_id).html(
+              $('#' + output_id).html().match(/.+(?=<br>$)/)[0] 
+              + "Disconnected from " + server_name + ".<br /><br />"
+            )
+            TERMINAL_TEXT_OBJECT.innerHTML = terminal_current_directory.path + promptSymbol 
+                                             + TERMINAL_TEXT_OBJECT.innerHTML.match(/<span.+/i)[0]
+            setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 2)
+            
+            server_response_logging = false
+          }
+          else if (message.match(/^\s*\$server\s+status/i) 
+              && decrypted_response)
+          {
+            decrypted_response = JSON.parse(decrypted_response)
+            
+            var tmp_response = "Secure link with " + server_name + " established.<br />"
+            
+            server_connection_on = true
+            
+            if (decrypted_response.user) 
+            {
+              server_is_logged_in = decrypted_response.user
+              tmp_response += server_is_logged_in + " is logged in.<br />"
+              
+              if (!terminal_current_directory_tmp)
+              {
+                terminal_current_directory_tmp = {
+                    path: JSON.stringify(terminal_current_directory),
+                    prompt: promptSymbol
+                  }
+                promptSymbol = server_prompt_symbol_2
+                terminal_current_directory.path = "[" + server_is_logged_in + "@" + server_name.toLowerCase()
+                                                  + server_prompt_symbol_1 + server_path + "]"
+              }
+              
+              TERMINAL_TEXT_OBJECT.innerHTML = terminal_current_directory.path + promptSymbol
+                                               + TERMINAL_TEXT_OBJECT.innerHTML.match(/<span.+/i)[0]
+            }
+            if (decrypted_response.chatOn && !server_chat_on)
+            {
+              server_chat_on = true
+              serverGetNewMessageInterval = setInterval(function(){serverGetNewMessage(output_id)},5000)
+              tmp_response += "Chat is on.<br />"
+            }
+            
+            decrypted_response = tmp_response
+          }
+          
+          if (server_response_logging)
+          {
+            var first_break = (input_html) ? "<br />" : ""
+            
+            if (decrypted_response) decrypted_response = server_name + server_prompt_symbol_1 + " " + decrypted_response
+            
+            $('#' + output_id).append(
+                                 input_html 
+                                 + ((decrypted_response) ? first_break + decrypted_response : "") 
+                                 + ((server_chat_on) ? "" : "<br />") 
+                                 + ((decrypted_response 
+                                     && decrypted_response.match(/<br \/>$|<br>$/i)
+                                     && !server_chat_on) ? "" : "<br />")
+                               )
+            
+            setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 5)
+          }
+        }
+      })
+    }
+    
+    //PROCESS SERVER COMMANDS
+    //server_input, terminal_input_html, window_id
+    if (server_input.match(/^\s*\$server\s+link/i)) serverSecureLink(terminal_input_html, window_id)
+    else if (server_input.match(/^\s*\$server\s+unlink/i))
+    {
+      $('#' + window_id).append(terminal_input_html + "<br />Disconnecting...<br /><br />")
+      setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 2)
+      serverSendMessage(server_input, terminal_input_html, window_id)
+    }
+    else if (server_input.match(/^\s*\$server\s+login\s+[^\s]+/i) 
+             && !server_input.match(/^\s*\$server\s+login\s+[^\s]+\s+\/p/i))
+    { 
+      var command = "set /pw terminalqserverpw=Password: & serverlogin" 
+      
+      tmp_objects_q.objects.serverLogin = {
+          server_input : server_input,
+          terminal_input_html : terminal_input_html,
+          window_id : window_id
+        }
+                  
+      window["terminalq_tmp_batch.bat"] = command
+      terminal_response = doCommand("Window:\\terminalq_tmp_batch.bat")
+      doTerminalResponse(terminal_input_html, terminal_response)
+    }
+    else if (server_input.match(/^\s*\$server\s+login\s+[^\s]+\s+\/p/i))
+    { 
+      serverSendMessage(server_input, 
+                        ((terminal_input_html) ? terminal_input_html.match(/^.+(?=\/p)/i)[0] : ""),
+                        window_id)
+    }
+    else if (server_connection_on) serverSendMessage(server_input, terminal_input_html, window_id)
+    else
+    {
+      $("#" + window_id).append(terminal_input_html + "<br />Link is not established with server. " 
+                                + "For help, type HELP $SERVER<br /><br />")
+      setTimeout(function(){TERMINAL_DIV_OBJECT.scrollTop = TERMINAL_DIV_OBJECT.scrollHeight}, 2)
+    }
+  }
+  
+  //TERMINAL SERVER PLUGIN - SERVER LOGIN FUNCTION
+  function serverlogin(){
+    var hidden = CMD_PATH.variable["terminalqserverpw"],
+        server_input = tmp_objects_q.objects.serverLogin.server_input,
+        terminal_input_html = tmp_objects_q.objects.serverLogin.terminal_input_html,
+        window_id = tmp_objects_q.objects.serverLogin.window_id
+    
+    delete CMD_PATH.variable["terminalqserverpw"]
+    delete tmp_objects_q.objects["serverLogin"]
+    
+    doServerCommand((server_input + " /p " + hidden), "", window_id)
+  }
+  
+  //TERMINAL SERVER PLUGIN - COMMAND & HELP SECTION
+  
+  CMD_PATH.command['serverlogin'] = {
+    name: 'serverlogin',
+    execute:  function(){
+                serverlogin()
+                return ''
+              }
+  }
+  CMD_PATH.command['$server'] = {
+    name: '$server',
+    summary: 'commands server connection and login',
+    help: 'Commands server connection and login.\n\n' +
+          '  $SERVER LINK\n' +
+          '  $SERVER UNLINK\n' +
+          '  $SERVER LOGIN Username [/P Password]\n' +
+          '  $SERVER LOGOUT [Username]\n' +
+          '  $SERVER STATUS'
+  }
+  CMD_PATH.command['$chat'] = {
+    name: '$chat',
+    summary: 'commands chat variables',
+    help: 'Commands chat variables.\n\n' +
+          '  $CHAT ON\n' +
+          '  $CHAT OFF\n' +
+          '  $CHAT CLEAR\n' +
+          '  $CHAT NICKNAME Nickname\n' +
+          '  $CHAT UNSET NICKNAME'
+  }
+  
+  //TERMINAL SERVER PLUGIN - CHECK STATUS ON PAGE REFRESH
+  setTimeout(function(){ 
+    //check server status on page refresh
+    if (sessionStorage.isConnected)
+    {
+      var terminal_input_html = terminal_current_directory.path + promptSymbol + '$server status'
+      if (!server_connection_on) server_connection_on = true
+      doServerCommand('$server status', terminal_input_html, 'terminalqHistory')
+    }
+  }, 50)
+  //END TERMINAL SERVER PLUGIN
+  
 } //END TERMINAL FUNCTION//
+
+jQuery.fn.outerHTML = function(s) {
+  return (s)
+  ? this.before(s).remove()
+  : jQuery("<p>").append(this.eq(0).clone()).html();
+}
 
 String.prototype.replaceArray = function(find, replace) {
   var replaceString = this;
