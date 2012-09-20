@@ -225,7 +225,8 @@
         switch($command)
         {
           case "login":
-            $server_response = "Please enter a username.";
+            if ($split[2]) $server_response = "Login incorrect.";
+            else $server_response = "Please enter a username.";
             break;
           case "logout":
             if (!isset($_SESSION["is_logged_in"])) $server_response = "";
