@@ -231,7 +231,7 @@
             if (!isset($_SESSION["is_logged_in"])) $server_response = "";
             else 
             {
-              $server_response = "Logged out " . $_SESSION["is_logged_in"] . ".";
+              $server_response = "Logged out.";
               if (isset($_SESSION["chat"])) unset($_SESSION["chat"]);
               unset($_SESSION["is_logged_in"]);
             }
