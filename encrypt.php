@@ -5,24 +5,24 @@
   //CONFIGURATION - JCRYPTION PATH
   $JCRYPTION_PATH = "../jcryption/jcryption.php";
   $KEYS_100_1024_PATH = "../jcryption/100_1024_keys.inc.php";
-  
-  //CONFIGURATION - MYSQL
-  $host = MYSQL_HOST;
-  $db_name = MYSQL_DATABASE_NAME;
-  $user = MYSQL_USER;
-  $pass = MYSQL_USER_PASSWORD;
-  
  
   //FUNCTIONS
   function getquery ($q) {
-    if (!mysql_connect($host, $user, $pass))
+  
+    //CONFIGURATION - MYSQL
+    $mysql_host = MYSQL_HOST;
+    $mysql_db_name = MYSQL_DATABASE_NAME;
+    $mysql_user = MYSQL_USER;
+    $mysql_pass = MYSQL_USER_PASSWORD;
+  
+    if (!mysql_connect($mysql_host, $mysql_user, $mysql_pass))
       { 
         return "Can't connect to sql."; 
         exit;
       }
-    if (!mysql_select_db($db_name))
+    if (!mysql_select_db($mysql_db_name))
       {
-        return "Can't access $db_name"; 
+        return "Can't access $mysql_db_name"; 
         exit;
       }
     $result = mysql_query($q);
