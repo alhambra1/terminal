@@ -26,3 +26,7 @@ Terminal-server-plugin configuration in the terminal.js file can be adjusted at 
 "TERMINAL SERVER PLUGIN - CONFIGURATION & VARIABLES" section, and in the encrypt.php file 
 at the "CONFIGURATION" section. The index.html file includes a path to jquery.jcryption.js, 
 which may need adjusting.
+
+---
+
+More wiki at https://sourceforge.net/p/jsterminal/wiki/Home/
